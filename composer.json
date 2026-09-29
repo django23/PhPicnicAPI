@@ -19,10 +19,10 @@
         "php-http/discovery": "^1.19"
     },
     "require-dev": {
-        "phpunit/phpunit": "^11.0",
+        "phpunit/phpunit": "^13.0",
         "mockery/mockery": "^1.6",
         "php-http/mock-client": "^1.6",
-        "guzzlehttp/guzzle": "^7.8",
+        "guzzlehttp/guzzle": "^7.8 || ^8.0",
         "nyholm/psr7": "^1.8",
         "phpstan/phpstan": "^2.0",
         "friendsofphp/php-cs-fixer": "^3.64",
