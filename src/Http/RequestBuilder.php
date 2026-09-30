@@ -25,7 +25,7 @@ final readonly class RequestBuilder
 
     public function apiGet(string $path, ?ClientIdentity $identityOverride = null): OutgoingRequest
     {
-        return $this->api('GET', $path, $this->apiHeaders($identityOverride), null);
+        return new OutgoingRequest('GET', $this->apiUrl($path), $this->apiHeaders($identityOverride), null, $path);
     }
 
     /**
@@ -37,12 +37,12 @@ final readonly class RequestBuilder
     {
         $encodedBody = $payload === null ? null : json_encode($payload, JSON_THROW_ON_ERROR);
 
-        return $this->api($method, $path, $this->apiHeaders(), $encodedBody);
+        return new OutgoingRequest($method, $this->apiUrl($path), $this->apiHeaders(), $encodedBody, $path);
     }
 
     public function apiBytes(string $path, string $bytes, string $contentType): OutgoingRequest
     {
-        return $this->api('POST', $path, [...$this->apiHeaders(), 'Content-Type' => $contentType], $bytes);
+        return new OutgoingRequest('POST', $this->apiUrl($path), [...$this->apiHeaders(), 'Content-Type' => $contentType], $bytes, $path);
     }
 
     /**
@@ -109,18 +109,9 @@ final readonly class RequestBuilder
         );
     }
 
-    /**
-     * @param array<string, string> $headers
-     */
-    private function api(string $method, string $path, array $headers, ?string $encodedBody): OutgoingRequest
+    private function apiUrl(string $path): string
     {
-        return new OutgoingRequest(
-            $method,
-            $this->config->location->baseUrl() . $this->relativePath($path),
-            $headers,
-            $encodedBody,
-            $path,
-        );
+        return $this->config->location->baseUrl() . $this->relativePath($path);
     }
 
     /**
