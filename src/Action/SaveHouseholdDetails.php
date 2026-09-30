@@ -10,7 +10,7 @@ use PhPicnic\LazyLoginApi;
 /**
  * Store household details. Untested upstream; the shape follows the "household_details" of the user.
  */
-final readonly class SetHouseholdDetails
+final readonly class SaveHouseholdDetails
 {
     public function __construct(private LazyLoginApi $api)
     {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhPicnic\Action;
 
+use PhPicnic\Dto\Reminder;
 use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\LazyLoginApi;
 
@@ -16,11 +17,8 @@ final readonly class SaveReminders
     {
     }
 
-    /**
-     * @param list<array{day_of_week: string, time_of_day: array{int, int}}> $reminders
-     */
-    public function execute(array $reminders): void
+    public function execute(Reminder ...$reminders): void
     {
-        $this->api->put(ApiEndpoint::REMINDERS->path(), $reminders);
+        $this->api->put(ApiEndpoint::REMINDERS->path(), array_map(static fn (Reminder $reminder): array => $reminder->toArray(), array_values($reminders)));
     }
 }

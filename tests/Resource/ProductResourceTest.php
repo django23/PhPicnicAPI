@@ -39,7 +39,7 @@ final class ProductResourceTest extends AbstractPicnicTestCase
         self::assertSame(self::BASE . '/pages/product-details-page-root?id=s1001524&show_category_action=true&show_remove_from_purchases_page_action=true', (string) $this->sentRequest(0)->getUri());
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
         $this->assertCarriesPicnicHeaders(0);
-        self::assertSame(['layout' => []], $result);
+        self::assertSame(['layout' => []], $result->raw);
     }
 
     public function testImageUrlBuildsAStaticUrl(): void

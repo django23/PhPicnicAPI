@@ -27,12 +27,12 @@ final class ConsentResourceTest extends AbstractPicnicTestCase
         self::assertSame([['id' => 'c-1']], $result);
     }
 
-    public function testFetchSettingsGeneral(): void
+    public function testFetchGeneralSettings(): void
     {
         $this->queueJson([['id' => 'c-1']]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->consents()->fetchSettings(true);
+        $client->consents()->fetchGeneralSettings();
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('GET', $this->sentRequest(0)->getMethod());
@@ -46,7 +46,7 @@ final class ConsentResourceTest extends AbstractPicnicTestCase
         $this->queueJson(['consent_request_text_ids' => ['t-1']]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $result = $client->consents()->saveSettings([new ConsentDeclaration('t-1', 'nl_NL', true)]);
+        $result = $client->consents()->saveSettings(new ConsentDeclaration('t-1', 'nl_NL', true));
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('PUT', $this->sentRequest(0)->getMethod());
@@ -61,12 +61,23 @@ final class ConsentResourceTest extends AbstractPicnicTestCase
         $this->queueJson([['id' => 'c-1']]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->consents()->fetch(['MISC_COMMERCIAL_ADS', 'MISC_READ_ADVERTISING_ID'], ConsentStrategy::NARROW);
+        $client->consents()->fetch(ConsentStrategy::NARROW, 'MISC_COMMERCIAL_ADS', 'MISC_READ_ADVERTISING_ID');
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('GET', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/consents?consent_topics=MISC_COMMERCIAL_ADS&consent_topics=MISC_READ_ADVERTISING_ID&strategy=NARROW', (string) $this->sentRequest(0)->getUri());
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
+        $this->assertCarriesPicnicHeaders(0);
+    }
+
+    public function testFetchWithoutTopicsOnlySendsTheStrategy(): void
+    {
+        $this->queueJson([]);
+        $client = $this->makeClient(cachedAuthToken: 'tok');
+
+        $client->consents()->fetch(ConsentStrategy::WIDE);
+
+        self::assertSame(self::BASE . '/consents?strategy=WIDE', (string) $this->sentRequest(0)->getUri());
         $this->assertCarriesPicnicHeaders(0);
     }
 
@@ -90,7 +101,7 @@ final class ConsentResourceTest extends AbstractPicnicTestCase
         $this->queueJson([]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->consents()->saveGeneral([new ConsentDeclaration('t-1', 'nl_NL', true)], true);
+        $client->consents()->saveGeneral(true, new ConsentDeclaration('t-1', 'nl_NL', true));
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('PUT', $this->sentRequest(0)->getMethod());

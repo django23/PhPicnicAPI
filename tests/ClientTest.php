@@ -89,7 +89,7 @@ final class ClientTest extends AbstractPicnicTestCase
         $fixture = $this->searchFixture();
         $this->queueJson($fixture);
 
-        self::assertSame($fixture, $this->makeClient(cachedAuthToken: 'tok')->products()->searchRawResponse('tea'));
+        self::assertSame($fixture, $this->makeClient(cachedAuthToken: 'tok')->products()->searchRawResponse('tea')->raw);
     }
 
     public function testGetCartReturnsDto(): void

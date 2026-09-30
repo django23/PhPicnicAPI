@@ -16,11 +16,8 @@ final readonly class SubscribeToPush
     {
     }
 
-    /**
-     * @param list<string> $topics
-     */
-    public function execute(array $topics): void
+    public function execute(string ...$topics): void
     {
-        $this->api->post(ApiEndpoint::ONBOARDING_SUBSCRIBE_PUSH->path(), ['topics' => $topics]);
+        $this->api->post(ApiEndpoint::ONBOARDING_SUBSCRIBE_PUSH->path(), ['topics' => array_values($topics)]);
     }
 }

@@ -7,6 +7,7 @@ namespace PhPicnic\Resource;
 use PhPicnic\Action\FetchConsents;
 use PhPicnic\Action\FetchConsentSettings;
 use PhPicnic\Action\FetchGeneralConsents;
+use PhPicnic\Action\FetchGeneralConsentSettings;
 use PhPicnic\Action\SaveConsentSettings;
 use PhPicnic\Action\SaveGeneralConsents;
 use PhPicnic\Dto\ConsentDeclaration;
@@ -22,6 +23,8 @@ final readonly class ConsentResource
 
     private SaveConsentSettings $saveConsentSettings;
 
+    private FetchGeneralConsentSettings $fetchGeneralConsentSettings;
+
     private FetchConsents $fetchConsents;
 
     private FetchGeneralConsents $fetchGeneralConsents;
@@ -32,6 +35,7 @@ final readonly class ConsentResource
     {
         $this->fetchConsentSettings = new FetchConsentSettings($api);
         $this->saveConsentSettings = new SaveConsentSettings($api);
+        $this->fetchGeneralConsentSettings = new FetchGeneralConsentSettings($api);
         $this->fetchConsents = new FetchConsents($api);
         $this->fetchGeneralConsents = new FetchGeneralConsents($api);
         $this->saveGeneralConsents = new SaveGeneralConsents($api);
@@ -40,29 +44,33 @@ final readonly class ConsentResource
     /**
      * @return array<mixed>
      */
-    public function fetchSettings(bool $general = false): array
+    public function fetchSettings(): array
     {
-        return $this->fetchConsentSettings->execute($general);
+        return $this->fetchConsentSettings->execute();
     }
 
     /**
-     * @param list<ConsentDeclaration> $declarations
-     *
      * @return array<mixed>
      */
-    public function saveSettings(array $declarations): array
+    public function fetchGeneralSettings(): array
     {
-        return $this->saveConsentSettings->execute($declarations);
+        return $this->fetchGeneralConsentSettings->execute();
     }
 
     /**
-     * @param list<string> $topics
-     *
      * @return array<mixed>
      */
-    public function fetch(array $topics, ConsentStrategy $strategy = ConsentStrategy::WIDE): array
+    public function saveSettings(ConsentDeclaration ...$declarations): array
     {
-        return $this->fetchConsents->execute($topics, $strategy);
+        return $this->saveConsentSettings->execute(...$declarations);
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    public function fetch(ConsentStrategy $strategy, string ...$topics): array
+    {
+        return $this->fetchConsents->execute($strategy, ...$topics);
     }
 
     /**
@@ -73,11 +81,8 @@ final readonly class ConsentResource
         return $this->fetchGeneralConsents->execute();
     }
 
-    /**
-     * @param list<ConsentDeclaration> $declarations
-     */
-    public function saveGeneral(array $declarations, bool $generalConsent): void
+    public function saveGeneral(bool $generalConsent, ConsentDeclaration ...$declarations): void
     {
-        $this->saveGeneralConsents->execute($declarations, $generalConsent);
+        $this->saveGeneralConsents->execute($generalConsent, ...$declarations);
     }
 }

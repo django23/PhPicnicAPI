@@ -10,9 +10,9 @@ use PhPicnic\Action\FetchUserInfo;
 use PhPicnic\Action\LogOut;
 use PhPicnic\Action\RegisterPushToken;
 use PhPicnic\Action\RequestPhoneVerificationCode;
-use PhPicnic\Action\SetBusinessDetails;
-use PhPicnic\Action\SetHouseholdDetails;
-use PhPicnic\Action\SubmitSuggestion;
+use PhPicnic\Action\SaveBusinessDetails;
+use PhPicnic\Action\SaveHouseholdDetails;
+use PhPicnic\Action\SendSuggestion;
 use PhPicnic\Action\SubscribeToPush;
 use PhPicnic\Action\VerifyPhoneNumber;
 use PhPicnic\Dto\UpdateCheckResult;
@@ -30,7 +30,7 @@ final readonly class AccountResource
 
     private LogOut $logOut;
 
-    private SubmitSuggestion $submitSuggestion;
+    private SendSuggestion $sendSuggestion;
 
     private RegisterPushToken $registerPushToken;
 
@@ -40,9 +40,9 @@ final readonly class AccountResource
 
     private VerifyPhoneNumber $verifyPhoneNumber;
 
-    private SetHouseholdDetails $setHouseholdDetails;
+    private SaveHouseholdDetails $saveHouseholdDetails;
 
-    private SetBusinessDetails $setBusinessDetails;
+    private SaveBusinessDetails $saveBusinessDetails;
 
     private SubscribeToPush $subscribeToPush;
 
@@ -51,13 +51,13 @@ final readonly class AccountResource
         $this->fetchUserInfo = new FetchUserInfo($api);
         $this->fetchProfileMenu = new FetchProfileMenu($api);
         $this->logOut = new LogOut($api);
-        $this->submitSuggestion = new SubmitSuggestion($api);
+        $this->sendSuggestion = new SendSuggestion($api);
         $this->registerPushToken = new RegisterPushToken($api);
         $this->checkForUpdates = new CheckForUpdates($api);
         $this->requestPhoneVerificationCode = new RequestPhoneVerificationCode($api);
         $this->verifyPhoneNumber = new VerifyPhoneNumber($api);
-        $this->setHouseholdDetails = new SetHouseholdDetails($api);
-        $this->setBusinessDetails = new SetBusinessDetails($api);
+        $this->saveHouseholdDetails = new SaveHouseholdDetails($api);
+        $this->saveBusinessDetails = new SaveBusinessDetails($api);
         $this->subscribeToPush = new SubscribeToPush($api);
     }
 
@@ -79,9 +79,9 @@ final readonly class AccountResource
         $this->logOut->execute();
     }
 
-    public function submitSuggestion(string $suggestion): void
+    public function sendSuggestion(string $suggestion): void
     {
-        $this->submitSuggestion->execute($suggestion);
+        $this->sendSuggestion->execute($suggestion);
     }
 
     public function registerPushToken(string $pushToken, string $platform): void
@@ -107,24 +107,21 @@ final readonly class AccountResource
     /**
      * @param array<string, mixed> $householdDetails
      */
-    public function setHouseholdDetails(array $householdDetails): void
+    public function saveHouseholdDetails(array $householdDetails): void
     {
-        $this->setHouseholdDetails->execute($householdDetails);
+        $this->saveHouseholdDetails->execute($householdDetails);
     }
 
     /**
      * @param array<string, mixed> $businessDetails
      */
-    public function setBusinessDetails(array $businessDetails): void
+    public function saveBusinessDetails(array $businessDetails): void
     {
-        $this->setBusinessDetails->execute($businessDetails);
+        $this->saveBusinessDetails->execute($businessDetails);
     }
 
-    /**
-     * @param list<string> $topics
-     */
-    public function subscribeToPush(array $topics): void
+    public function subscribeToPush(string ...$topics): void
     {
-        $this->subscribeToPush->execute($topics);
+        $this->subscribeToPush->execute(...$topics);
     }
 }

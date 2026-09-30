@@ -17,6 +17,7 @@ use PhPicnic\Action\RateDelivery;
 use PhPicnic\Action\ResendDeliveryInvoiceEmail;
 use PhPicnic\Dto\Delivery;
 use PhPicnic\Dto\DeliverySlot;
+use PhPicnic\Dto\UiTree;
 use PhPicnic\Enum\PageId;
 use PhPicnic\LazyLoginApi;
 
@@ -88,18 +89,12 @@ final readonly class DeliveryResource
         return $this->fetchCurrentDeliveries->execute();
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchRoutingScenario(string $deliveryId): array
+    public function fetchRoutingScenario(string $deliveryId): UiTree
     {
         return $this->fetchDeliveryRoutingScenario->execute($deliveryId);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchDriverPosition(string $deliveryId): array
+    public function fetchDriverPosition(string $deliveryId): UiTree
     {
         return $this->fetchDeliveryDriverPosition->execute($deliveryId);
     }
@@ -125,10 +120,7 @@ final readonly class DeliveryResource
         $this->resendDeliveryInvoiceEmail->execute($deliveryId);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchReceiptPage(string $deliveryId): array
+    public function fetchReceiptPage(string $deliveryId): UiTree
     {
         return $this->fetchPage->execute(PageId::DELIVERY_RECEIPT, ['delivery_id' => $deliveryId]);
     }

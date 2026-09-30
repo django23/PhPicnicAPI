@@ -11,6 +11,7 @@ use PhPicnic\Action\FetchPublicContactInfo;
 use PhPicnic\Action\FetchReminders;
 use PhPicnic\Action\SaveReminders;
 use PhPicnic\Dto\Parcel;
+use PhPicnic\Dto\Reminder;
 use PhPicnic\LazyLoginApi;
 
 /**
@@ -57,13 +58,11 @@ final readonly class CustomerServiceResource
     }
 
     /**
-     * @param list<string> $displayPositions
-     *
      * @return array<mixed>
      */
-    public function fetchMessages(array $displayPositions = []): array
+    public function fetchMessages(string ...$displayPositions): array
     {
-        return $this->fetchMessages->execute($displayPositions);
+        return $this->fetchMessages->execute(...$displayPositions);
     }
 
     /**
@@ -74,12 +73,9 @@ final readonly class CustomerServiceResource
         return $this->fetchReminders->execute();
     }
 
-    /**
-     * @param list<array{day_of_week: string, time_of_day: array{int, int}}> $reminders
-     */
-    public function saveReminders(array $reminders): void
+    public function saveReminders(Reminder ...$reminders): void
     {
-        $this->saveReminders->execute($reminders);
+        $this->saveReminders->execute(...$reminders);
     }
 
     /**

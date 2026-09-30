@@ -37,7 +37,7 @@ final class PageResourceTest extends AbstractPicnicTestCase
         self::assertSame(self::BASE . '/pages/some-page?x=a%20b', (string) $this->sentRequest(0)->getUri());
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
         $this->assertCarriesPicnicHeaders(0);
-        self::assertSame(['layout' => []], $result);
+        self::assertSame(['layout' => []], $result->raw);
     }
 
     public function testResolveDeeplink(): void

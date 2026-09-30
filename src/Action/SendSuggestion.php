@@ -10,7 +10,7 @@ use PhPicnic\LazyLoginApi;
 /**
  * Send a suggestion to Picnic. Untested upstream.
  */
-final readonly class SubmitSuggestion
+final readonly class SendSuggestion
 {
     public function __construct(private LazyLoginApi $api)
     {

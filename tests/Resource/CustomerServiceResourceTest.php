@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhPicnic\Tests\Resource;
 
+use PhPicnic\Dto\Reminder;
+use PhPicnic\Enum\DayOfWeek;
 use PhPicnic\Tests\Support\AbstractPicnicTestCase;
 
 final class CustomerServiceResourceTest extends AbstractPicnicTestCase
@@ -59,7 +61,7 @@ final class CustomerServiceResourceTest extends AbstractPicnicTestCase
         $this->queueJson(['messages' => []]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->customerService()->fetchMessages(['PROMPT', 'MESSAGE_BAR']);
+        $client->customerService()->fetchMessages('PROMPT', 'MESSAGE_BAR');
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('GET', $this->sentRequest(0)->getMethod());
@@ -87,7 +89,7 @@ final class CustomerServiceResourceTest extends AbstractPicnicTestCase
         $this->queueJson([]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->customerService()->saveReminders([['day_of_week' => 'MONDAY', 'time_of_day' => [8, 0]]]);
+        $client->customerService()->saveReminders(new Reminder(DayOfWeek::MONDAY, 8));
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('PUT', $this->sentRequest(0)->getMethod());

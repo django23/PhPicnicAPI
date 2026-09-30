@@ -65,6 +65,6 @@ final class DeliveryResourceTest extends AbstractPicnicTestCase
         self::assertSame(self::BASE . '/pages/delivery-receipt-page?delivery_id=d-1', (string) $this->sentRequest(0)->getUri());
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
         $this->assertCarriesPicnicHeaders(0);
-        self::assertSame(['layout' => []], $result);
+        self::assertSame(['layout' => []], $result->raw);
     }
 }

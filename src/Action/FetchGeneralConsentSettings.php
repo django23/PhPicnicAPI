@@ -8,9 +8,9 @@ use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\LazyLoginApi;
 
 /**
- * Consent settings the user can change.
+ * Settings of the general consent.
  */
-final readonly class FetchConsentSettings
+final readonly class FetchGeneralConsentSettings
 {
     public function __construct(private LazyLoginApi $api)
     {
@@ -21,6 +21,6 @@ final readonly class FetchConsentSettings
      */
     public function execute(): array
     {
-        return $this->api->get(ApiEndpoint::CONSENT_SETTINGS_PAGE->path());
+        return $this->api->get(ApiEndpoint::CONSENT_GENERAL_SETTINGS_PAGE->path());
     }
 }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhPicnic\Action;
 
+use PhPicnic\Dto\UiTree;
 use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\LazyLoginApi;
 
@@ -16,11 +17,8 @@ final readonly class FetchSearchEmptyState
     {
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function execute(): array
+    public function execute(): UiTree
     {
-        return $this->api->get(ApiEndpoint::CONTENT_SEARCH_EMPTY_STATE->path());
+        return UiTree::fromArray($this->api->get(ApiEndpoint::CONTENT_SEARCH_EMPTY_STATE->path()));
     }
 }

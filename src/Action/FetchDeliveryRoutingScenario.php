@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhPicnic\Action;
 
+use PhPicnic\Dto\UiTree;
 use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\LazyLoginApi;
 
@@ -16,11 +17,8 @@ final readonly class FetchDeliveryRoutingScenario
     {
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function execute(string $deliveryId): array
+    public function execute(string $deliveryId): UiTree
     {
-        return $this->api->get(ApiEndpoint::DELIVERY_SCENARIO->path($deliveryId));
+        return UiTree::fromArray($this->api->get(ApiEndpoint::DELIVERY_SCENARIO->path($deliveryId)));
     }
 }

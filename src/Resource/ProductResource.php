@@ -13,6 +13,7 @@ use PhPicnic\Action\SearchProductsRawResponse;
 use PhPicnic\Action\SuggestSearchTerms;
 use PhPicnic\Dto\Product;
 use PhPicnic\Dto\SearchSuggestion;
+use PhPicnic\Dto\UiTree;
 use PhPicnic\Enum\ImageSize;
 use PhPicnic\Enum\PageId;
 use PhPicnic\LazyLoginApi;
@@ -52,10 +53,7 @@ final readonly class ProductResource
         return $this->searchProducts->execute($searchTerm);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function searchRawResponse(string $searchTerm): array
+    public function searchRawResponse(string $searchTerm): UiTree
     {
         return $this->searchProductsRawResponse->execute($searchTerm);
     }
@@ -68,10 +66,7 @@ final readonly class ProductResource
         return $this->suggestSearchTerms->execute($searchTerm);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchDetailsPage(string $productId): array
+    public function fetchDetailsPage(string $productId): UiTree
     {
         return $this->fetchPage->execute(PageId::PRODUCT_DETAILS, [
             'id' => $productId,

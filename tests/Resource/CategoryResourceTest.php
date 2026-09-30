@@ -22,7 +22,7 @@ final class CategoryResourceTest extends AbstractPicnicTestCase
         self::assertSame(self::BASE . '/pages/L1-category-page-root?category_id=c1', (string) $this->sentRequest(0)->getUri());
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
         $this->assertCarriesPicnicHeaders(0);
-        self::assertSame(['layout' => []], $result);
+        self::assertSame(['layout' => []], $result->raw);
     }
 
     public function testFetchLevelTwoPage(): void
@@ -37,7 +37,7 @@ final class CategoryResourceTest extends AbstractPicnicTestCase
         self::assertSame(self::BASE . '/pages/L2-category-page-root?category_id=c2', (string) $this->sentRequest(0)->getUri());
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
         $this->assertCarriesPicnicHeaders(0);
-        self::assertSame(['layout' => []], $result);
+        self::assertSame(['layout' => []], $result->raw);
     }
 
     public function testFetchLevelThreePage(): void
@@ -52,6 +52,6 @@ final class CategoryResourceTest extends AbstractPicnicTestCase
         self::assertSame(self::BASE . '/pages/L2-category-page-root?category_id=c2&l3_category_id=c3', (string) $this->sentRequest(0)->getUri());
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
         $this->assertCarriesPicnicHeaders(0);
-        self::assertSame(['layout' => []], $result);
+        self::assertSame(['layout' => []], $result->raw);
     }
 }

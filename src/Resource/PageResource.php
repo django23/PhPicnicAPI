@@ -12,6 +12,7 @@ use PhPicnic\Action\FetchSearchEmptyState;
 use PhPicnic\Action\ResolveDeeplink;
 use PhPicnic\ClientIdentity;
 use PhPicnic\Dto\RscPage;
+use PhPicnic\Dto\UiTree;
 use PhPicnic\Enum\PageId;
 use PhPicnic\LazyLoginApi;
 
@@ -52,10 +53,8 @@ final readonly class PageResource
 
     /**
      * @param array<string, string> $query
-     *
-     * @return array<mixed>
      */
-    public function fetchPage(PageId|string $pageId, array $query = [], ?ClientIdentity $identityOverride = null): array
+    public function fetchPage(PageId|string $pageId, array $query = [], ?ClientIdentity $identityOverride = null): UiTree
     {
         return $this->fetchPage->execute($pageId, $query, $identityOverride);
     }
@@ -73,66 +72,42 @@ final readonly class PageResource
         return $this->resolveDeeplink->execute($url);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchFaq(): array
+    public function fetchFaq(): UiTree
     {
         return $this->fetchFaq->execute();
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchSearchEmptyState(): array
+    public function fetchSearchEmptyState(): UiTree
     {
         return $this->fetchSearchEmptyState->execute();
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchHome(): array
+    public function fetchHome(): UiTree
     {
         return $this->fetchPage->execute(PageId::HOME);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchPurchases(): array
+    public function fetchPurchases(): UiTree
     {
         return $this->fetchPage->execute(PageId::PURCHASES);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchSlotSelector(): array
+    public function fetchSlotSelector(): UiTree
     {
         return $this->fetchPage->execute(PageId::SLOT_SELECTOR);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchParcelsOverview(): array
+    public function fetchParcelsOverview(): UiTree
     {
         return $this->fetchPage->execute(PageId::PARCELS_OVERVIEW);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchEmptySearch(): array
+    public function fetchEmptySearch(): UiTree
     {
         return $this->fetchPage->execute(PageId::EMPTY_SEARCH);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchParcelTracking(string $parcelId): array
+    public function fetchParcelTracking(string $parcelId): UiTree
     {
         return $this->fetchPage->execute(PageId::PARCEL_TRACKING, ['parcel_id' => $parcelId]);
     }

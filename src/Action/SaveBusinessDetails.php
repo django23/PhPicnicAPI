@@ -10,7 +10,7 @@ use PhPicnic\LazyLoginApi;
 /**
  * Store business details. Untested upstream.
  */
-final readonly class SetBusinessDetails
+final readonly class SaveBusinessDetails
 {
     public function __construct(private LazyLoginApi $api)
     {

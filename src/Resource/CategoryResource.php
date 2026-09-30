@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhPicnic\Resource;
 
 use PhPicnic\Action\FetchPage;
+use PhPicnic\Dto\UiTree;
 use PhPicnic\Enum\PageId;
 use PhPicnic\LazyLoginApi;
 
@@ -20,26 +21,17 @@ final readonly class CategoryResource
         $this->fetchPage = new FetchPage($api);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchLevelOnePage(string $categoryId): array
+    public function fetchLevelOnePage(string $categoryId): UiTree
     {
         return $this->fetchPage->execute(PageId::CATEGORY_LEVEL_ONE, ['category_id' => $categoryId]);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchLevelTwoPage(string $categoryId): array
+    public function fetchLevelTwoPage(string $categoryId): UiTree
     {
         return $this->fetchPage->execute(PageId::CATEGORY_LEVEL_TWO, ['category_id' => $categoryId]);
     }
 
-    /**
-     * @return array<mixed>
-     */
-    public function fetchLevelThreePage(string $levelTwoCategoryId, string $levelThreeCategoryId): array
+    public function fetchLevelThreePage(string $levelTwoCategoryId, string $levelThreeCategoryId): UiTree
     {
         return $this->fetchPage->execute(PageId::CATEGORY_LEVEL_TWO, [
             'category_id' => $levelTwoCategoryId,

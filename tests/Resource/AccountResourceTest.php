@@ -55,12 +55,12 @@ final class AccountResourceTest extends AbstractPicnicTestCase
         $this->assertCarriesPicnicHeaders(0);
     }
 
-    public function testSubmitSuggestion(): void
+    public function testSendSuggestion(): void
     {
         $this->queueJson([]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->account()->submitSuggestion('More oat milk');
+        $client->account()->sendSuggestion('More oat milk');
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('POST', $this->sentRequest(0)->getMethod());
@@ -126,12 +126,12 @@ final class AccountResourceTest extends AbstractPicnicTestCase
         $this->assertCarriesPicnicHeaders(0);
     }
 
-    public function testSetHouseholdDetails(): void
+    public function testSaveHouseholdDetails(): void
     {
         $this->queueJson([]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->account()->setHouseholdDetails(['adults' => 2, 'children' => 1]);
+        $client->account()->saveHouseholdDetails(['adults' => 2, 'children' => 1]);
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('POST', $this->sentRequest(0)->getMethod());
@@ -140,12 +140,12 @@ final class AccountResourceTest extends AbstractPicnicTestCase
         $this->assertCarriesPicnicHeaders(0);
     }
 
-    public function testSetBusinessDetails(): void
+    public function testSaveBusinessDetails(): void
     {
         $this->queueJson([]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->account()->setBusinessDetails(['business_name' => 'Acme']);
+        $client->account()->saveBusinessDetails(['business_name' => 'Acme']);
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('POST', $this->sentRequest(0)->getMethod());
@@ -159,7 +159,7 @@ final class AccountResourceTest extends AbstractPicnicTestCase
         $this->queueJson([]);
         $client = $this->makeClient(cachedAuthToken: 'tok');
 
-        $client->account()->subscribeToPush(['DELIVERY', 'PROMO']);
+        $client->account()->subscribeToPush('DELIVERY', 'PROMO');
 
         self::assertCount(1, $this->http->getRequests());
         self::assertSame('POST', $this->sentRequest(0)->getMethod());

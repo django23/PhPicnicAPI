@@ -18,11 +18,9 @@ final readonly class SaveConsentSettings
     }
 
     /**
-     * @param list<ConsentDeclaration> $declarations
-     *
      * @return array<mixed>
      */
-    public function execute(array $declarations): array
+    public function execute(ConsentDeclaration ...$declarations): array
     {
         return $this->api->put(ApiEndpoint::CONSENTS->path(), [
             'consent_declarations' => array_map(static fn (ConsentDeclaration $declaration): array => $declaration->toArray(), $declarations),

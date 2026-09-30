@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace PhPicnic\Action;
 
 use PhPicnic\ClientIdentity;
+use PhPicnic\Dto\UiTree;
 use PhPicnic\Enum\PageId;
 use PhPicnic\Exception\UnexpectedResponseFormatException;
 use PhPicnic\LazyLoginApi;
@@ -22,12 +23,10 @@ final readonly class FetchPage
     /**
      * @param array<string, string> $query
      *
-     * @return array<mixed>
-     *
      * @throws UnexpectedResponseFormatException
      */
-    public function execute(PageId|string $pageId, array $query = [], ?ClientIdentity $identityOverride = null): array
+    public function execute(PageId|string $pageId, array $query = [], ?ClientIdentity $identityOverride = null): UiTree
     {
-        return $this->api->get(PageRequest::pathFor($pageId, $query), $identityOverride);
+        return UiTree::fromArray($this->api->get(PageRequest::pathFor($pageId, $query), $identityOverride));
     }
 }

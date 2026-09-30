@@ -22,6 +22,6 @@ final readonly class SearchProducts
      */
     public function execute(string $searchTerm): array
     {
-        return SearchResultParser::parse(new SearchProductsRawResponse($this->api)->execute($searchTerm));
+        return SearchResultParser::parse(new SearchProductsRawResponse($this->api)->execute($searchTerm)->raw);
     }
 }

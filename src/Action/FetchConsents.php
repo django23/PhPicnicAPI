@@ -7,6 +7,7 @@ namespace PhPicnic\Action;
 use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\Enum\ConsentStrategy;
 use PhPicnic\LazyLoginApi;
+use PhPicnic\QueryString;
 
 /**
  * Open consent requests for the given topics.
@@ -18,17 +19,15 @@ final readonly class FetchConsents
     }
 
     /**
-     * @param list<string> $topics
-     *
      * @return array<mixed>
      */
-    public function execute(array $topics, ConsentStrategy $strategy = ConsentStrategy::WIDE): array
+    public function execute(ConsentStrategy $strategy, string ...$topics): array
     {
-        $query = implode('&', array_map(
-            static fn (string $topic): string => 'consent_topics=' . rawurlencode($topic),
-            $topics,
-        ));
+        $query = QueryString::join(
+            QueryString::repeated('consent_topics', ...$topics),
+            QueryString::fromPairs(['strategy' => $strategy->value]),
+        );
 
-        return $this->api->get(ApiEndpoint::CONSENTS->path() . '?' . $query . ($query === '' ? '' : '&') . 'strategy=' . $strategy->value);
+        return $this->api->get(QueryString::appendTo(ApiEndpoint::CONSENTS->path(), $query));
     }
 }

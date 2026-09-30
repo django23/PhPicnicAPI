@@ -17,10 +17,7 @@ final readonly class SaveGeneralConsents
     {
     }
 
-    /**
-     * @param list<ConsentDeclaration> $declarations
-     */
-    public function execute(array $declarations, bool $generalConsent): void
+    public function execute(bool $generalConsent, ConsentDeclaration ...$declarations): void
     {
         $this->api->put(ApiEndpoint::CONSENTS_GENERAL->path(), [
             'consent_declarations' => array_map(static fn (ConsentDeclaration $declaration): array => $declaration->toArray(), $declarations),

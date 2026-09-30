@@ -20,10 +20,6 @@ final class PageRequest
         $pageIdValue = $pageId instanceof PageId ? $pageId->value : $pageId;
         $path = ApiEndpoint::PAGE->path($pageIdValue);
 
-        if ($query === []) {
-            return $path;
-        }
-
-        return $path . '?' . http_build_query($query, '', '&', PHP_QUERY_RFC3986);
+        return QueryString::appendTo($path, QueryString::fromPairs($query));
     }
 }

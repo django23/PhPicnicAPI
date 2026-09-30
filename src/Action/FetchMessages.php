@@ -6,6 +6,7 @@ namespace PhPicnic\Action;
 
 use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\LazyLoginApi;
+use PhPicnic\QueryString;
 
 /**
  * In-app messages to show at the given positions (PROMPT, MESSAGE_BAR, ORDER_CONFIRMATION, STOREFRONT_DIALOG).
@@ -17,17 +18,13 @@ final readonly class FetchMessages
     }
 
     /**
-     * @param list<string> $displayPositions
-     *
      * @return array<mixed>
      */
-    public function execute(array $displayPositions = []): array
+    public function execute(string ...$displayPositions): array
     {
-        $query = implode('&', array_map(
-            static fn (string $position): string => 'display_position=' . rawurlencode($position),
-            $displayPositions,
+        return $this->api->get(QueryString::appendTo(
+            ApiEndpoint::MESSAGES->path(),
+            QueryString::repeated('display_position', ...$displayPositions),
         ));
-
-        return $this->api->get(ApiEndpoint::MESSAGES->path() . ($query === '' ? '' : '?' . $query));
     }
 }
