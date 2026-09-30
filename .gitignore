@@ -7,3 +7,6 @@ composer.lock
 .php-cs-fixer.cache
 .claude
 .picnic-token
+
+# Local docs (not committed)
+docs/

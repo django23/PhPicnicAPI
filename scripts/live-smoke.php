@@ -111,7 +111,7 @@ check('products()->suggest', static fn (): string => $count($picnic->products()-
 check('products()->fetchDetailsPage', static function () use ($picnic): string {
     $productId = $picnic->products()->search('melk')[0]->id ?? '';
 
-    return $productId . ': ' . implode(',', array_keys($picnic->products()->fetchDetailsPage($productId)));
+    return $productId . ': ' . implode(',', array_keys($picnic->products()->fetchDetailsPage($productId)->raw));
 }, $failedChecks);
 check('products()->fetchImage', static function () use ($picnic): string {
     $imageId = $picnic->products()->search('melk')[0]->raw['image_id'] ?? $picnic->products()->search('melk')[0]->raw['imageId'] ?? null;
@@ -138,7 +138,7 @@ check('deliveries()->fetchById', static function () use ($picnic): string {
 check('deliveries()->fetchReceiptPage', static function () use ($picnic): string {
     $delivery = $picnic->deliveries()->fetchAll()[0] ?? null;
 
-    return $delivery === null ? 'no deliveries' : implode(',', array_keys($picnic->deliveries()->fetchReceiptPage($delivery->deliveryId)));
+    return $delivery === null ? 'no deliveries' : implode(',', array_keys($picnic->deliveries()->fetchReceiptPage($delivery->deliveryId)->raw));
 }, $failedChecks);
 check('payments()->fetchProfile', static fn (): string => implode(',', array_slice(array_keys($picnic->payments()->fetchProfile()), 0, 4)), $failedChecks);
 check('payments()->fetchWalletTransactions', static fn (): string => count($picnic->payments()->fetchWalletTransactions()) . ' transactions', $failedChecks);
@@ -158,17 +158,17 @@ check('customerService()->fetchParcels', static fn (): string => $count($picnic-
 check('consents()->fetchSettings', static fn (): string => $count($picnic->consents()->fetchSettings()), $failedChecks);
 check('consents()->fetchGeneral', static fn (): string => implode(',', array_keys($picnic->consents()->fetchGeneral())), $failedChecks);
 check('pages()->fetchBootstrap', static fn (): string => count($picnic->pages()->fetchBootstrap()['tabs'] ?? []) . ' tabs', $failedChecks);
-check('pages()->fetchHome', static fn (): string => implode(',', array_keys($picnic->pages()->fetchHome())), $failedChecks);
-check('pages()->fetchPurchases', static fn (): string => implode(',', array_keys($picnic->pages()->fetchPurchases())), $failedChecks);
-check('pages()->fetchSlotSelector', static fn (): string => implode(',', array_keys($picnic->pages()->fetchSlotSelector())), $failedChecks);
-check('pages()->fetchParcelsOverview', static fn (): string => implode(',', array_keys($picnic->pages()->fetchParcelsOverview())), $failedChecks);
-check('pages()->fetchEmptySearch', static fn (): string => implode(',', array_keys($picnic->pages()->fetchEmptySearch())), $failedChecks);
-check('pages()->fetchFaq', static fn (): string => implode(',', array_keys($picnic->pages()->fetchFaq())), $failedChecks);
-check('pages()->fetchSearchEmptyState', static fn (): string => implode(',', array_keys($picnic->pages()->fetchSearchEmptyState())), $failedChecks);
+check('pages()->fetchHome', static fn (): string => implode(',', array_keys($picnic->pages()->fetchHome()->raw)), $failedChecks);
+check('pages()->fetchPurchases', static fn (): string => implode(',', array_keys($picnic->pages()->fetchPurchases()->raw)), $failedChecks);
+check('pages()->fetchSlotSelector', static fn (): string => implode(',', array_keys($picnic->pages()->fetchSlotSelector()->raw)), $failedChecks);
+check('pages()->fetchParcelsOverview', static fn (): string => implode(',', array_keys($picnic->pages()->fetchParcelsOverview()->raw)), $failedChecks);
+check('pages()->fetchEmptySearch', static fn (): string => implode(',', array_keys($picnic->pages()->fetchEmptySearch()->raw)), $failedChecks);
+check('pages()->fetchFaq', static fn (): string => implode(',', array_keys($picnic->pages()->fetchFaq()->raw)), $failedChecks);
+check('pages()->fetchSearchEmptyState', static fn (): string => implode(',', array_keys($picnic->pages()->fetchSearchEmptyState()->raw)), $failedChecks);
 check('pages()->fetchCategoryTree (RSC)', static fn (): string => count($picnic->pages()->fetchCategoryTree()->rows) . ' rows', $failedChecks);
 check('pages()->fetchProfile (RSC)', static fn (): string => count($picnic->pages()->fetchProfile()->rows) . ' rows', $failedChecks);
-check('recipes()->fetchCookbook', static fn (): string => implode(',', array_keys($picnic->recipes()->fetchCookbook())), $failedChecks);
-check('recipes()->fetchMealPlan', static fn (): string => implode(',', array_keys($picnic->recipes()->fetchMealPlan())), $failedChecks);
+check('recipes()->fetchCookbook', static fn (): string => implode(',', array_keys($picnic->recipes()->fetchCookbook()->raw)), $failedChecks);
+check('mealPlan()->fetchMealPlan', static fn (): string => implode(',', array_keys($picnic->mealPlan()->fetchMealPlan()->raw)), $failedChecks);
 
 if ($allowWrites) {
     echo "\n== Write round trip (--write)\n";

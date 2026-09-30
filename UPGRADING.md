@@ -123,3 +123,13 @@ Other changes:
 - `Delivery::$eta2Start` / `$eta2End` are now `$estimatedArrivalStart` / `$estimatedArrivalEnd`.
 - Ids (`User::$userId`, `Product::$id`, `Cart::$id`, `CartItem::$id`, `Delivery::$deliveryId`, `DeliverySlot::$slotId`) are non-null. A response without one throws `MalformedResponseException`.
 - Exceptions: `PicnicException` is now `AbstractPicnicException`, `AuthenticationException` is `AbstractAuthenticationException`. Bad credentials throw `InvalidCredentialsException`, unknown countries throw `UnsupportedCountryException`.
+
+## Third clean code pass
+
+- **`Session` split** into `Http\LoginFlow`, `AuthResponseGuard`, `RequestBuilder`, `RequestSender`, `AuthTokenHolder`, `FailedResponseMapper`; its public API is unchanged.
+- **Recipes split** three ways: `recipes()` (cookbook, details, save, unsave), `mealPlan()` (`fetchMealPlan`, `assignToBasket`, `updatePortionsInBasket`, `removeFromBasket`) and `userDefinedRecipes()` (`create`, `rename`, `updatePortions`, `delete`, `addIngredient`, `updateIngredient`, `assignComponentToDay`, `removeIngredient`, `saveNote`, `deleteNote`, `selectImage`, `uploadImage`).
+- **Parameter objects** in `PhPicnic\Recipe`: `NewIngredient`, `IngredientEdit`, `DayAssignment`, `SellingUnitQuantities`. `addIngredient($groupId, NewIngredient, $portions)`, `updateIngredient($groupId, IngredientEdit, ?ComponentSwapType)`, `assignComponentToDay($groupId, DayAssignment)`.
+- **No flag arguments:** `consents()->fetchSettings()` and `fetchGeneralSettings()` replace `fetchSettings(bool $general)`.
+- **Typed variadics:** `consents()->saveSettings(ConsentDeclaration ...$declarations)`, `saveGeneral(bool $generalConsent, ConsentDeclaration ...$declarations)`, `fetch(ConsentStrategy $strategy, string ...$topics)`, `customerService()->fetchMessages(string ...$positions)`, `saveReminders(Reminder ...$reminders)` (new `Dto\Reminder`, `Enum\DayOfWeek`), `account()->subscribeToPush(string ...$topics)`.
+- **One verb per concept:** `setHouseholdDetails`/`setBusinessDetails` are now `saveHouseholdDetails`/`saveBusinessDetails`, `submitSuggestion` is `sendSuggestion`, recipe `updateNote` is `saveNote`.
+- **`UiTree`** replaces `array` for UI-tree results: `pages()->fetch*Page/Home/Purchases/...`, `products()->searchRawResponse/fetchDetailsPage`, `categories()->fetchLevel*Page`, `deliveries()->fetchRoutingScenario/fetchDriverPosition/fetchReceiptPage`, `recipes()->fetchCookbook/fetchDetailsPage`, `mealPlan()->fetchMealPlan`. Read the array from `->raw`.

@@ -25,16 +25,18 @@ CI (`.github/workflows/ci.yml`) runs `composer check` on PHP 8.4 and 8.5 after `
 
 ```
 Client (built via Client::create(Credentials, PicnicConfig, ?HttpTransport))
-  ├─ Resource/*   cart, checkout, products, categories, deliveries, payments, account,
-  │               consents, customerService, pages, recipes: the autocomplete surface
+  ├─ Resource/*   cart, checkout, products, categories, deliveries, payments, account, consents,
+  │               customerService, pages, recipes, mealPlan, userDefinedRecipes: the autocomplete surface
   │    └─ Action/*   one class per endpoint, execute()
   │         └─ LazyLoginApi (logs in on first authenticated call; public/static calls never log in)
-  │              └─ Session (auth token + store, headers per request, error mapping, relative paths only)
-  │                   ├─ HttpTransport (PSR-18/17), JsonResponseDecoder, ApiErrorBody
-  │                   └─ PicnicConfig = ApiLocation + ClientIdentity(AppProfile) + AuthTokenStoreInterface
+  │              └─ Session (facade, <200 lines)
+  │                   └─ Http/*  LoginFlow, AuthResponseGuard, RequestBuilder, RequestSender,
+  │                              AuthTokenHolder (+ AuthTokenStoreInterface), FailedResponseMapper
+  │                   HttpTransport (PSR-18/17), JsonResponseDecoder, ApiErrorBody
+  │                   PicnicConfig = ApiLocation + ClientIdentity(AppProfile) + AuthTokenStoreInterface
 Enum/ApiEndpoint   every API path lives here, never inline; Enum/PageId for /pages/{id}
-Dto/*      readonly entities hydrated via PayloadReader, each keeps ->raw; ids are required and throw MalformedResponseException
-Search/SearchResultParser   flattens Picnic's PML UI tree into products
+Dto/*      readonly entities via PayloadReader (ids required, MalformedResponseException); UiTree for UI trees, RscPage for RSC pages
+Recipe/*   value objects for multi-part recipe input (max 3 parameters per method)
 ```
 
 Non-obvious behaviors that live in `Session` and must be preserved:
@@ -58,6 +60,10 @@ Non-obvious behaviors that live in `Session` and must be preserved:
 - Never accept absolute URLs in `Session`, and never send the token to a public/static request.
 - Live canary: `composer smoke` (read-only; `-- --profile=V1_206_1`, `-- --write` for an add/remove round trip). Run it after every Picnic-facing change.
 - New structured endpoints get a DTO following the `PayloadReader` + `->raw` pattern.
+
+## Local docs
+
+`docs/` (gitignored, local): `CODING_STANDARDS.md` (rules, Clean Code, what each tool enforces), `ARCHITECTURE.md` (layers, add-an-endpoint checklist), `TOOLING.md`, `MAINTENANCE.md`, `HISTORY.md` (what was done and why). Read `CODING_STANDARDS.md` before writing code.
 
 ## Staying current
 

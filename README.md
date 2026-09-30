@@ -71,7 +71,9 @@ Everything is grouped by area, so autocomplete lists what you can do:
 | `consents()` | read and save privacy consents |
 | `customerService()` | contact info, in-app messages, reminders, external parcels |
 | `pages()` | bootstrap, any Fusion or RSC page by id, deeplinks, FAQ |
-| `recipes()` | cookbook, meal plan, save, basket, user-defined recipes, notes, images |
+| `recipes()` | cookbook, recipe details page, save and unsave |
+| `mealPlan()` | the meal plan page, put a recipe in the basket, change its portions, remove it |
+| `userDefinedRecipes()` | create, rename, delete your own recipes, ingredients, note, image upload |
 
 ### Two-factor authentication
 
@@ -143,7 +145,7 @@ agent string works too: `new ClientIdentity(picnicAgent: '30100;1.246.1-15599;')
 ```php
 $products = $picnic->products()->search('coffee');            // list<Product>
 $picnic->products()->suggest('cof');                          // list<SearchSuggestion>
-$picnic->products()->fetchDetailsPage($products[0]->id);      // array: the product page tree
+$picnic->products()->fetchDetailsPage($products[0]->id);      // UiTree: the product page
 $picnic->products()->findIdByGtin('8712345678901');           // ?string, e.g. "s1234567"
 $picnic->products()->imageUrl($imageId, ImageSize::LARGE);    // string
 $picnic->products()->fetchImage($imageId);                    // PNG bytes
@@ -186,15 +188,18 @@ $picnic->payments()->fetchWalletTransactions(1);      // list<WalletTransaction>
 $picnic->account()->fetchInfo();                      // UserInfo
 $picnic->customerService()->fetchParcels();           // list<Parcel>
 $picnic->pages()->fetchBootstrap();                   // tabs and the page ids behind them
-$picnic->recipes()->fetchCookbook();
+$picnic->recipes()->fetchCookbook();              // UiTree
+$picnic->consents()->saveSettings(new ConsentDeclaration('text-id', 'nl_NL', true));
+$picnic->customerService()->saveReminders(new Reminder(DayOfWeek::MONDAY, 8));
 ```
 
-Endpoints that return Picnic's UI trees (pages, receipts, tracking, most recipe calls) return
-plain arrays; structured ones return DTOs.
+Picnic's server-driven UI trees (pages, receipts, live tracking, FAQ) come back as a `UiTree`
+(`->raw` holds the array, `->findNodesOfType('SELLING_UNIT_TILE')` collects nodes), RSC pages as an
+`RscPage`, structured responses as DTOs, and plain data (bootstrap, consents, contact info) as arrays.
 
 ### DTOs
 
-Structured responses are typed, readonly DTOs. Picnic's field shapes drift, so hydration is
+Structured responses are typed, readonly DTOs. Multi-part input (recipe ingredients, reminders, consent answers) uses small value objects, so no method takes more than three parameters. Picnic's field shapes drift, so hydration is
 lenient: ids are required (a missing one throws `MalformedResponseException`), other known
 fields are nullable, and the complete payload is always available on `->raw`.
 
