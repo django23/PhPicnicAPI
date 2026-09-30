@@ -285,6 +285,31 @@ Last checked (update this table every time):
 | --- | --- | --- |
 | 2026-09-30 | MRVDH/picnic-api v4.10.0 (`9352e19`), python-picnic-api2 2.0.1 (`17139d0`), mcp-picnic v1.15.1 | All endpoints ported except removed ones (`/lists`, categories, `recipe-details-page-root`). Default agent 1.246.1. `composer smoke`: 36/36 reads, write round trip OK. |
 
+### Prompt for the periodic sweep
+
+Paste this into Claude Code (or another coding agent) from the repo root whenever you want the full maintenance
+pass: about once a month, after a Picnic breakage, or before a release.
+
+```text
+Run the periodic maintenance sweep for this repo (PhPicnicAPI).
+
+1. Read CLAUDE.md and, if present, docs/CODING_STANDARDS.md, docs/ARCHITECTURE.md, docs/TOOLING.md and docs/MAINTENANCE.md.
+2. Baseline: run `composer check` and `composer smoke` (read-only; tell me if it needs an SMS code). Report failures first.
+3. Upstream check: follow "Keeping up with Picnic" in README.md. Compare MRVDH/picnic-api, python-picnic-api2, mcp-picnic and the
+   Home Assistant picnic integration (releases, commits, issues since the "Last checked" date). Port new or changed endpoints,
+   new app-version profiles and removals, each with tests (method, URL, body, identity headers) and never by guessing.
+4. Clean-code sweep against docs/CODING_STANDARDS.md: methods with more than 3 parameters, bool flag arguments, classes over ~150 lines,
+   `array<mixed>` where a value object fits, duplicated code, inconsistent verbs, stale or restating comments, unused code, missing tests.
+   Fix what you find; use parallel sub-agents only on disjoint files.
+5. Security sweep: no absolute URLs into Session, no token on public/static/redirect requests, nothing logs, no secrets in code, tests,
+   docs or git history (`git log -S` for the password, .env and .picnic-token never tracked).
+6. Finish: `composer fix && composer check && composer smoke`. Update the "Last checked" table, UPGRADING.md (public API changes)
+   and docs/HISTORY.md. Commit in logical chunks with conventional commit subjects only (no body, no attribution).
+   Never commit .env or .picnic-token, never push, and ask before anything destructive or that changes my Picnic account.
+
+Give me a short report: what changed upstream, what you fixed, what you could not verify.
+```
+
 ## Development
 
 ```shell

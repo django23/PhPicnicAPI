@@ -61,9 +61,15 @@ Non-obvious behaviors that live in `Session` and must be preserved:
 - Live canary: `composer smoke` (read-only; `-- --profile=V1_206_1`, `-- --write` for an add/remove round trip). Run it after every Picnic-facing change.
 - New structured endpoints get a DTO following the `PayloadReader` + `->raw` pattern.
 
-## Local docs
+## Before you write code here
 
-`docs/` (gitignored, local): `CODING_STANDARDS.md` (rules, Clean Code, what each tool enforces), `ARCHITECTURE.md` (layers, add-an-endpoint checklist), `TOOLING.md`, `MAINTENANCE.md`, `HISTORY.md` (what was done and why). Read `CODING_STANDARDS.md` before writing code.
+Every code change in this repository follows the docs. `docs/` is local (gitignored); when it is missing, the rules below and in "Conventions" still apply.
+
+1. **Read first:** `docs/CODING_STANDARDS.md` (rules, Clean Code principles, what each tool enforces) and `docs/ARCHITECTURE.md` (layers, forbidden patterns, add-an-endpoint checklist). `docs/TOOLING.md` explains Rector, PHPStan, Symplify and the scripts; `docs/MAINTENANCE.md` and `docs/HISTORY.md` explain the upkeep and why things are the way they are.
+2. **While writing:** intention-revealing names, max 3 parameters (value object beyond that), no bool flag arguments, one verb per concept (fetch/find/search/add/remove/save/update/select), no magic values (enums), typed lists (variadics, `list<T>`), early returns, comments explain why only.
+3. **Before you finish:** `composer fix && composer check` must be green. If the change touches how we talk to Picnic, also run `composer smoke` (read-only) and note anything not verified live in the docblock.
+4. **After a public API change:** update `UPGRADING.md`, the README table or examples, and `docs/HISTORY.md`.
+5. **Periodically:** the sweep prompt in `README.md` ("Prompt for the periodic sweep") runs the upstream check plus a clean-code and security audit.
 
 ## Staying current
 
