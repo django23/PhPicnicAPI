@@ -15,15 +15,17 @@ use PhPicnic\Resource\CheckoutResource;
 use PhPicnic\Resource\ConsentResource;
 use PhPicnic\Resource\CustomerServiceResource;
 use PhPicnic\Resource\DeliveryResource;
+use PhPicnic\Resource\MealPlanResource;
 use PhPicnic\Resource\PageResource;
 use PhPicnic\Resource\PaymentResource;
 use PhPicnic\Resource\ProductResource;
 use PhPicnic\Resource\RecipeResource;
+use PhPicnic\Resource\UserDefinedRecipeResource;
 
 /**
  * High-level client for the (unofficial) Picnic API. Account and login methods
  * live here; everything else is grouped into resources:
- * cart(), checkout(), products(), categories(), deliveries(), payments(), account(), consents(), customerService(), pages() and recipes().
+ * cart(), checkout(), products(), categories(), deliveries(), payments(), account(), consents(), customerService(), pages(), recipes(), mealPlan() and userDefinedRecipes().
  * Each resource method delegates to a single-purpose class in {@see Action}.
  *
  * This library is not affiliated with Picnic and talks to the endpoints of the
@@ -57,6 +59,10 @@ final readonly class Client
 
     private RecipeResource $recipeResource;
 
+    private MealPlanResource $mealPlanResource;
+
+    private UserDefinedRecipeResource $userDefinedRecipeResource;
+
     public function __construct(
         Credentials $credentials,
         private Session $session,
@@ -74,6 +80,8 @@ final readonly class Client
         $this->customerServiceResource = new CustomerServiceResource($this->api);
         $this->pageResource = new PageResource($this->api);
         $this->recipeResource = new RecipeResource($this->api);
+        $this->mealPlanResource = new MealPlanResource($this->api);
+        $this->userDefinedRecipeResource = new UserDefinedRecipeResource($this->api);
     }
 
     /**
@@ -187,5 +195,15 @@ final readonly class Client
     public function recipes(): RecipeResource
     {
         return $this->recipeResource;
+    }
+
+    public function mealPlan(): MealPlanResource
+    {
+        return $this->mealPlanResource;
+    }
+
+    public function userDefinedRecipes(): UserDefinedRecipeResource
+    {
+        return $this->userDefinedRecipeResource;
     }
 }
