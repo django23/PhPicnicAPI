@@ -63,13 +63,14 @@ Non-obvious behaviors that live in `Session` and must be preserved:
 
 ## Before you write code here
 
-Every code change in this repository follows the docs. `docs/` is local (gitignored); when it is missing, the rules below and in "Conventions" still apply.
+Every code change in this repository follows the docs. `docs/` is local and stays gitignored on purpose (Django's decision, so do not commit it or un-ignore it); when it is missing on a machine, the rules below and in "Conventions" still apply in full.
 
 1. **Read first:** `docs/CODING_STANDARDS.md` (rules, Clean Code principles, what each tool enforces) and `docs/ARCHITECTURE.md` (layers, forbidden patterns, add-an-endpoint checklist). `docs/TOOLING.md` explains Rector, PHPStan, Symplify and the scripts; `docs/MAINTENANCE.md` and `docs/HISTORY.md` explain the upkeep and why things are the way they are.
 2. **While writing:** intention-revealing names, max 3 parameters (value object beyond that), no bool flag arguments, one verb per concept (fetch/find/search/add/remove/save/update/select), no magic values (enums), typed lists (variadics, `list<T>`), early returns, comments explain why only.
 3. **Before you finish:** `composer fix && composer check` must be green. If the change touches how we talk to Picnic, also run `composer smoke` (read-only) and note anything not verified live in the docblock.
 4. **After a public API change:** update `UPGRADING.md`, the README table or examples, and `docs/HISTORY.md`.
-5. **Periodically:** the sweep prompt in `README.md` ("Prompt for the periodic sweep") runs the upstream check plus a clean-code and security audit.
+5. **Periodically:** the sweep prompt in `README.md` ("Prompt for the periodic sweep") runs the upstream check plus a clean-code and security audit. When Django asks for "the sweep", execute that prompt end to end, report briefly (upstream changes, fixes, what could not be verified) and add a row to the "Last checked" table.
+6. **Secrets:** `.env` and `.picnic-token` hold real credentials and are gitignored. Never print, commit or paste them; scan the staged diff before every commit.
 
 ## Staying current
 
@@ -77,5 +78,5 @@ Picnic breaks its private API every one to three months. Once a month, and whene
 
 ## Reference docs in repo
 
-- `ROADMAP.md` (untracked, agent-oriented backlog with verified endpoint notes and upstream references: `python-picnic-api2`, JS `picnic-api`, `ivo-toby/mcp-picnic`)
+- `ROADMAP.md` (agent-oriented backlog, verified endpoint notes, upstream references, app-version bump steps, open questions)
 - `UPGRADING.md`, `README.md`

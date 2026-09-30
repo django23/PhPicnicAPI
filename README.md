@@ -284,6 +284,7 @@ Last checked (update this table every time):
 | Date | Repo state compared | Result |
 | --- | --- | --- |
 | 2026-09-30 | MRVDH/picnic-api v4.10.0 (`9352e19`), python-picnic-api2 2.0.1 (`17139d0`), mcp-picnic v1.15.1 | All endpoints ported except removed ones (`/lists`, categories, `recipe-details-page-root`). Default agent 1.246.1. `composer smoke`: 36/36 reads, write round trip OK. |
+| 2026-09-30 (sweep, evening) | same heads: `9352e19`, `17139d0`, v1.15.1; no open Picnic issues in home-assistant/core | Nothing new upstream. Fresh clone passes `composer check` (289 tests); `composer smoke` 36/36 on `V1_246_1`, RSC pages report FORMAT only on `V1_206_1` by design. |
 
 ### Prompt for the periodic sweep
 
