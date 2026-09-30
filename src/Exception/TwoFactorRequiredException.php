@@ -9,7 +9,7 @@ namespace PhPicnic\Exception;
  * factor. Trigger delivery with {@see \PhPicnic\Client::generate2FA()} and finish
  * with {@see \PhPicnic\Client::verify2FA()}.
  */
-final class TwoFactorRequiredException extends AuthenticationException
+final class TwoFactorRequiredException extends AbstractAuthenticationException
 {
     /**
      * @param array<mixed> $response the decoded login response

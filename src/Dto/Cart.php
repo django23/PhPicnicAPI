@@ -9,8 +9,6 @@ namespace PhPicnic\Dto;
  */
 final readonly class Cart
 {
-    use HydratesFromArray;
-
     /**
      * @param list<CartItem> $items
      * @param int|null       $totalPrice total cart price in cents
@@ -26,23 +24,23 @@ final readonly class Cart
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $payload): self
     {
         $items = [];
-        foreach (self::arr($data, 'items') as $item) {
+        foreach (PayloadReader::readArray($payload, 'items') as $item) {
             if (is_array($item)) {
                 $items[] = CartItem::fromArray($item);
             }
         }
 
         return new self(
-            id: self::str($data, 'id'),
+            id: PayloadReader::readString($payload, 'id'),
             items: $items,
-            totalCount: self::int($data, 'total_count'),
-            totalPrice: self::int($data, 'total_price'),
-            raw: $data,
+            totalCount: PayloadReader::readInt($payload, 'total_count'),
+            totalPrice: PayloadReader::readInt($payload, 'total_price'),
+            raw: $payload,
         );
     }
 }

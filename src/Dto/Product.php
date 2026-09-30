@@ -13,8 +13,6 @@ namespace PhPicnic\Dto;
  */
 final readonly class Product
 {
-    use HydratesFromArray;
-
     /**
      * @param int|null     $price        price in cents
      * @param int|null     $displayPrice display price in cents (may differ from $price on promo)
@@ -33,19 +31,19 @@ final readonly class Product
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $payload): self
     {
         return new self(
-            id: self::str($data, 'id'),
-            name: self::str($data, 'name'),
-            price: self::int($data, 'price'),
-            displayPrice: self::int($data, 'displayPrice') ?? self::int($data, 'display_price'),
-            unitQuantity: self::str($data, 'unitQuantity') ?? self::str($data, 'unit_quantity'),
-            imageId: self::str($data, 'imageId') ?? self::str($data, 'image_id'),
-            soleArticleId: self::str($data, 'soleArticleId') ?? self::str($data, 'sole_article_id'),
-            raw: $data,
+            id: PayloadReader::readString($payload, 'id'),
+            name: PayloadReader::readString($payload, 'name'),
+            price: PayloadReader::readInt($payload, 'price'),
+            displayPrice: PayloadReader::readInt($payload, 'displayPrice') ?? PayloadReader::readInt($payload, 'display_price'),
+            unitQuantity: PayloadReader::readString($payload, 'unitQuantity') ?? PayloadReader::readString($payload, 'unit_quantity'),
+            imageId: PayloadReader::readString($payload, 'imageId') ?? PayloadReader::readString($payload, 'image_id'),
+            soleArticleId: PayloadReader::readString($payload, 'soleArticleId') ?? PayloadReader::readString($payload, 'sole_article_id'),
+            raw: $payload,
         );
     }
 }

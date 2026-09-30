@@ -27,11 +27,5 @@ jobs:
       - name: Install dependencies
         run: composer update --no-interaction --prefer-dist
 
-      - name: Coding standard
-        run: composer cs
-
-      - name: Static analysis
-        run: composer stan
-
-      - name: Tests
-        run: composer test
+      - name: Check (validate, lint, refactor, analyse, test)
+        run: composer check

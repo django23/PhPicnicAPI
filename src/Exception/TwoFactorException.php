@@ -8,7 +8,7 @@ namespace PhPicnic\Exception;
  * Thrown when generating or verifying a two-factor code fails (e.g. invalid OTP
  * or unsupported channel).
  */
-final class TwoFactorException extends AuthenticationException
+final class TwoFactorException extends AbstractAuthenticationException
 {
     public function __construct(
         string $message = 'Two-factor authentication failed.',

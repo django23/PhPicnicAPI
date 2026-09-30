@@ -9,7 +9,7 @@ use Throwable;
 /**
  * Thrown when the Picnic API responds with a non-successful HTTP status.
  */
-final class PicnicApiException extends PicnicException
+final class PicnicApiException extends AbstractPicnicException
 {
     public function __construct(
         string $message,

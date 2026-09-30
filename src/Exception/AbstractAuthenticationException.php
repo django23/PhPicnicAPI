@@ -9,6 +9,6 @@ namespace PhPicnic\Exception;
  *
  * Specialized by {@see TwoFactorRequiredException} and {@see TwoFactorException}.
  */
-class AuthenticationException extends PicnicException
+abstract class AbstractAuthenticationException extends AbstractPicnicException
 {
 }

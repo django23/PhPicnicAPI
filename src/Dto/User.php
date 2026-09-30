@@ -9,8 +9,6 @@ namespace PhPicnic\Dto;
  */
 final readonly class User
 {
-    use HydratesFromArray;
-
     /**
      * @param array<mixed> $raw
      */
@@ -25,17 +23,17 @@ final readonly class User
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $payload): self
     {
         return new self(
-            userId: self::str($data, 'user_id') ?? self::str($data, 'id'),
-            firstName: self::str($data, 'firstname') ?? self::str($data, 'first_name'),
-            lastName: self::str($data, 'lastname') ?? self::str($data, 'last_name'),
-            contactEmail: self::str($data, 'contact_email') ?? self::str($data, 'email'),
-            phone: self::str($data, 'phone'),
-            raw: $data,
+            userId: PayloadReader::readString($payload, 'user_id') ?? PayloadReader::readString($payload, 'id'),
+            firstName: PayloadReader::readString($payload, 'firstname') ?? PayloadReader::readString($payload, 'first_name'),
+            lastName: PayloadReader::readString($payload, 'lastname') ?? PayloadReader::readString($payload, 'last_name'),
+            contactEmail: PayloadReader::readString($payload, 'contact_email') ?? PayloadReader::readString($payload, 'email'),
+            phone: PayloadReader::readString($payload, 'phone'),
+            raw: $payload,
         );
     }
 }

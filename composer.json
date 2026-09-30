@@ -3,7 +3,14 @@
     "description": "Unofficial, framework-agnostic PHP client for the Picnic supermarket API (PSR-18).",
     "type": "library",
     "license": "MIT",
-    "keywords": ["picnic", "api", "client", "supermarket", "groceries", "psr-18"],
+    "keywords": [
+        "picnic",
+        "api",
+        "client",
+        "supermarket",
+        "groceries",
+        "psr-18"
+    ],
     "homepage": "https://github.com/django23/PhPicnicAPI",
     "authors": [
         {
@@ -19,13 +26,19 @@
         "php-http/discovery": "^1.19"
     },
     "require-dev": {
-        "phpunit/phpunit": "^13.0",
-        "mockery/mockery": "^1.6",
-        "php-http/mock-client": "^1.6",
-        "guzzlehttp/guzzle": "^7.8 || ^8.0",
-        "nyholm/psr7": "^1.8",
-        "phpstan/phpstan": "^2.0",
         "friendsofphp/php-cs-fixer": "^3.64",
+        "guzzlehttp/guzzle": "^7.8 || ^8.0",
+        "mockery/mockery": "^1.6",
+        "nyholm/psr7": "^1.8",
+        "php-http/mock-client": "^1.6",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan": "^2.0",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0",
+        "phpstan/phpstan-strict-rules": "^2.0",
+        "phpunit/phpunit": "^13.0",
+        "rector/rector": "^2.6",
+        "symplify/phpstan-rules": "^14.17",
         "vlucas/phpdotenv": "^5.6"
     },
     "autoload": {
@@ -40,16 +53,42 @@
     },
     "scripts": {
         "test": "phpunit",
-        "stan": "phpstan analyse",
-        "cs": "php-cs-fixer fix --dry-run --diff",
-        "cs-fix": "php-cs-fixer fix"
+        "lint": "php-cs-fixer fix --dry-run --diff",
+        "lint:fix": "php-cs-fixer fix",
+        "analyse": "phpstan analyse --memory-limit=1G",
+        "refactor": "rector process --dry-run",
+        "refactor:fix": "rector process",
+        "validate:composer": "@composer validate --strict",
+        "check": [
+            "@validate:composer",
+            "@lint",
+            "@refactor",
+            "@analyse",
+            "@test"
+        ],
+        "fix": [
+            "@refactor:fix",
+            "@lint:fix"
+        ]
     },
     "config": {
         "sort-packages": true,
         "allow-plugins": {
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "phpstan/extension-installer": true
         }
     },
     "minimum-stability": "stable",
-    "prefer-stable": true
+    "prefer-stable": true,
+    "scripts-descriptions": {
+        "test": "Run the PHPUnit suite",
+        "lint": "Check code style (no changes written)",
+        "lint:fix": "Fix code style",
+        "analyse": "Run PHPStan at max level",
+        "refactor": "Show Rector refactors still pending (no changes written)",
+        "refactor:fix": "Apply Rector refactors",
+        "validate:composer": "Validate composer.json strictly",
+        "check": "Run every check: validate, lint, refactor, analyse, test (used by CI)",
+        "fix": "Apply all automatic fixes: Rector, then code style"
+    }
 }

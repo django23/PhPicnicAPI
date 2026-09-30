@@ -9,8 +9,6 @@ namespace PhPicnic\Dto;
  */
 final readonly class Delivery
 {
-    use HydratesFromArray;
-
     /**
      * @param list<string> $orderIds
      * @param array<mixed> $raw
@@ -27,28 +25,45 @@ final readonly class Delivery
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $payload): self
     {
-        $slot = self::arr($data, 'slot');
-        $eta2 = self::arr($data, 'eta2');
+        $slot = PayloadReader::readArray($payload, 'slot');
+        $eta2 = PayloadReader::readArray($payload, 'eta2');
 
         $orderIds = [];
-        foreach (self::arr($data, 'orders') as $order) {
+        foreach (PayloadReader::readArray($payload, 'orders') as $order) {
             if (is_array($order) && isset($order['id']) && is_string($order['id'])) {
                 $orderIds[] = $order['id'];
             }
         }
 
         return new self(
-            deliveryId: self::str($data, 'delivery_id') ?? self::str($data, 'id'),
-            status: self::str($data, 'status'),
-            slotId: self::str($slot, 'slot_id') ?? self::str($data, 'slot_id'),
-            eta2Start: self::str($eta2, 'start'),
-            eta2End: self::str($eta2, 'end'),
+            deliveryId: PayloadReader::readString($payload, 'delivery_id') ?? PayloadReader::readString($payload, 'id'),
+            status: PayloadReader::readString($payload, 'status'),
+            slotId: PayloadReader::readString($slot, 'slot_id') ?? PayloadReader::readString($payload, 'slot_id'),
+            eta2Start: PayloadReader::readString($eta2, 'start'),
+            eta2End: PayloadReader::readString($eta2, 'end'),
             orderIds: $orderIds,
-            raw: $data,
+            raw: $payload,
         );
+    }
+
+    /**
+     * @param array<mixed> $items
+     *
+     * @return list<self>
+     */
+    public static function fromList(array $items): array
+    {
+        $hydratedItems = [];
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $hydratedItems[] = self::fromArray($item);
+            }
+        }
+
+        return $hydratedItems;
     }
 }

@@ -4,14 +4,10 @@ declare(strict_types=1);
 
 namespace PhPicnic\Tests;
 
-use PhPicnic\Dto\Cart;
-use PhPicnic\Dto\Delivery;
-use PhPicnic\Dto\DeliverySlot;
-use PhPicnic\Dto\Product;
-use PhPicnic\Dto\User;
-use PhPicnic\Tests\Support\PicnicTestCase;
+use InvalidArgumentException;
+use PhPicnic\Tests\Support\AbstractPicnicTestCase;
 
-final class ClientTest extends PicnicTestCase
+final class ClientTest extends AbstractPicnicTestCase
 {
     private const string BASE = 'https://storefront-prod.nl.picnicinternational.com/api/15';
 
@@ -19,7 +15,7 @@ final class ClientTest extends PicnicTestCase
     {
         $this->queueLoginThen(['user_id' => 'u-1']);
 
-        $user = $this->makeClient()->getUser();
+        $user = $this->makeClient()->fetchLoggedInUser();
 
         // request 0 = login, request 1 = the actual call
         $login = $this->sentRequest(0);
@@ -34,7 +30,6 @@ final class ClientTest extends PicnicTestCase
         self::assertSame(md5('secret'), $body['secret']);
 
         self::assertSame('test-token', $this->sentRequest(1)->getHeaderLine('x-picnic-auth'));
-        self::assertInstanceOf(User::class, $user);
         self::assertSame('u-1', $user->userId);
     }
 
@@ -42,7 +37,7 @@ final class ClientTest extends PicnicTestCase
     {
         $this->queueJson(['user_id' => 'u-1']);
 
-        $user = $this->makeClient(authToken: 'cached')->getUser();
+        $user = $this->makeClient(authToken: 'cached')->fetchLoggedInUser();
 
         self::assertSame(self::BASE . '/user', (string) $this->sentRequest(0)->getUri());
         self::assertSame('cached', $this->sentRequest(0)->getHeaderLine('x-picnic-auth'));
@@ -53,14 +48,13 @@ final class ClientTest extends PicnicTestCase
     {
         $this->queueJson($this->searchFixture());
 
-        $products = $this->makeClient(authToken: 'tok')->search('coffee');
+        $products = $this->makeClient(authToken: 'tok')->searchProductsByTerm('coffee');
 
         self::assertSame(
             self::BASE . '/pages/search-page-results?search_term=coffee',
             (string) $this->sentRequest(0)->getUri(),
         );
         self::assertCount(1, $products);
-        self::assertInstanceOf(Product::class, $products[0]);
         self::assertSame('10511523', $products[0]->id);
         self::assertSame('Lavazza espresso koffiebonen', $products[0]->name);
         self::assertSame(599, $products[0]->displayPrice);
@@ -73,7 +67,7 @@ final class ClientTest extends PicnicTestCase
         $fixture = $this->searchFixture();
         $this->queueJson($fixture);
 
-        self::assertSame($fixture, $this->makeClient(authToken: 'tok')->searchRaw('tea'));
+        self::assertSame($fixture, $this->makeClient(authToken: 'tok')->searchProductsRawResponse('tea'));
     }
 
     public function testGetCartReturnsDto(): void
@@ -85,11 +79,10 @@ final class ClientTest extends PicnicTestCase
             'items' => [['id' => 'line-1', 'count' => 2, 'price' => 1198]],
         ]);
 
-        $cart = $this->makeClient(authToken: 'tok')->getCart();
+        $cart = $this->makeClient(authToken: 'tok')->fetchShoppingCart();
 
         self::assertSame('GET', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/cart', (string) $this->sentRequest(0)->getUri());
-        self::assertInstanceOf(Cart::class, $cart);
         self::assertSame('shopping_cart', $cart->id);
         self::assertSame(1198, $cart->totalPrice);
         self::assertCount(1, $cart->items);
@@ -99,7 +92,7 @@ final class ClientTest extends PicnicTestCase
     public function testAddProduct(): void
     {
         $this->queueJson(['id' => 'shopping_cart']);
-        $this->makeClient(authToken: 'tok')->addProduct('10511523', 2);
+        $this->makeClient(authToken: 'tok')->addProductToCart('10511523', 2);
 
         self::assertSame('POST', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/cart/add_product', (string) $this->sentRequest(0)->getUri());
@@ -109,7 +102,7 @@ final class ClientTest extends PicnicTestCase
     public function testAddProductsBatchSendsMap(): void
     {
         $this->queueJson(['id' => 'shopping_cart']);
-        $this->makeClient(authToken: 'tok')->addProducts(['10511523' => 2, '20622634' => 1]);
+        $this->makeClient(authToken: 'tok')->addMultipleProductsToCart(['10511523' => 2, '20622634' => 1]);
 
         self::assertSame('POST', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/cart/products/add', (string) $this->sentRequest(0)->getUri());
@@ -118,14 +111,14 @@ final class ClientTest extends PicnicTestCase
 
     public function testAddProductsRejectsEmpty(): void
     {
-        $this->expectException(\InvalidArgumentException::class);
-        $this->makeClient(authToken: 'tok')->addProducts([]);
+        $this->expectException(InvalidArgumentException::class);
+        $this->makeClient(authToken: 'tok')->addMultipleProductsToCart([]);
     }
 
     public function testRemoveProductDefaultsToOne(): void
     {
         $this->queueJson(['id' => 'shopping_cart']);
-        $this->makeClient(authToken: 'tok')->removeProduct('10511523');
+        $this->makeClient(authToken: 'tok')->removeProductFromCart('10511523');
 
         self::assertSame(self::BASE . '/cart/remove_product', (string) $this->sentRequest(0)->getUri());
         self::assertSame(['product_id' => '10511523', 'count' => 1], $this->sentJsonBody(0));
@@ -135,18 +128,17 @@ final class ClientTest extends PicnicTestCase
     {
         // Regression: v1 clearCart() errored because post() required a $data arg.
         $this->queueJson(['id' => 'shopping_cart', 'items' => []]);
-        $cart = $this->makeClient(authToken: 'tok')->clearCart();
+        $this->makeClient(authToken: 'tok')->emptyShoppingCart();
 
         self::assertSame('POST', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/cart/clear', (string) $this->sentRequest(0)->getUri());
         self::assertSame([], $this->sentJsonBody(0));
-        self::assertInstanceOf(Cart::class, $cart);
     }
 
     public function testSetDeliverySlot(): void
     {
         $this->queueJson(['id' => 'shopping_cart']);
-        $this->makeClient(authToken: 'tok')->setDeliverySlot('slot-9');
+        $this->makeClient(authToken: 'tok')->selectDeliverySlotForCart('slot-9');
 
         self::assertSame(self::BASE . '/cart/set_delivery_slot', (string) $this->sentRequest(0)->getUri());
         self::assertSame(['slot_id' => 'slot-9'], $this->sentJsonBody(0));
@@ -158,12 +150,11 @@ final class ClientTest extends PicnicTestCase
             ['slot_id' => 's1', 'window_start' => '2026-06-20T10:00:00', 'is_available' => true],
         ]]);
 
-        $slots = $this->makeClient(authToken: 'tok')->getDeliverySlots();
+        $slots = $this->makeClient(authToken: 'tok')->fetchAvailableDeliverySlots();
 
         self::assertSame('GET', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/cart/delivery_slots', (string) $this->sentRequest(0)->getUri());
         self::assertCount(1, $slots);
-        self::assertInstanceOf(DeliverySlot::class, $slots[0]);
         self::assertSame('s1', $slots[0]->slotId);
         self::assertTrue($slots[0]->isAvailable);
     }
@@ -171,7 +162,7 @@ final class ClientTest extends PicnicTestCase
     public function testGetListAll(): void
     {
         $this->queueJson([]);
-        $this->makeClient(authToken: 'tok')->getList();
+        $this->makeClient(authToken: 'tok')->fetchAllShoppingLists();
 
         self::assertSame(self::BASE . '/lists', (string) $this->sentRequest(0)->getUri());
     }
@@ -179,7 +170,7 @@ final class ClientTest extends PicnicTestCase
     public function testGetListById(): void
     {
         $this->queueJson([]);
-        $this->makeClient(authToken: 'tok')->getList('purchases');
+        $this->makeClient(authToken: 'tok')->fetchShoppingListById('purchases');
 
         self::assertSame(self::BASE . '/lists/purchases', (string) $this->sentRequest(0)->getUri());
     }
@@ -187,7 +178,7 @@ final class ClientTest extends PicnicTestCase
     public function testGetSublist(): void
     {
         $this->queueJson([]);
-        $this->makeClient(authToken: 'tok')->getSublist('promotions', 'sub-1');
+        $this->makeClient(authToken: 'tok')->fetchShoppingListSublist('promotions', 'sub-1');
 
         self::assertSame(self::BASE . '/lists/promotions?sublist=sub-1', (string) $this->sentRequest(0)->getUri());
     }
@@ -196,11 +187,10 @@ final class ClientTest extends PicnicTestCase
     {
         // Regression: Picnic switched this endpoint from POST to GET.
         $this->queueJson(['delivery_id' => 'd-42', 'status' => 'COMPLETED']);
-        $delivery = $this->makeClient(authToken: 'tok')->getDelivery('d-42');
+        $delivery = $this->makeClient(authToken: 'tok')->fetchDeliveryById('d-42');
 
         self::assertSame('GET', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/deliveries/d-42', (string) $this->sentRequest(0)->getUri());
-        self::assertInstanceOf(Delivery::class, $delivery);
         self::assertSame('d-42', $delivery->deliveryId);
         self::assertSame('COMPLETED', $delivery->status);
     }
@@ -208,7 +198,7 @@ final class ClientTest extends PicnicTestCase
     public function testGetDeliveryScenario(): void
     {
         $this->queueJson(['scenario' => 'EN_ROUTE']);
-        $this->makeClient(authToken: 'tok')->getDeliveryScenario('d-42');
+        $this->makeClient(authToken: 'tok')->fetchDeliveryRoutingScenario('d-42');
 
         self::assertSame('GET', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/deliveries/d-42/scenario', (string) $this->sentRequest(0)->getUri());
@@ -217,7 +207,7 @@ final class ClientTest extends PicnicTestCase
     public function testGetDeliveryPosition(): void
     {
         $this->queueJson([]);
-        $this->makeClient(authToken: 'tok')->getDeliveryPosition('d-42');
+        $this->makeClient(authToken: 'tok')->fetchDeliveryDriverPosition('d-42');
 
         self::assertSame(self::BASE . '/deliveries/d-42/position', (string) $this->sentRequest(0)->getUri());
     }
@@ -226,7 +216,7 @@ final class ClientTest extends PicnicTestCase
     {
         // Regression: unsummarized /deliveries was removed by Picnic.
         $this->queueJson([['delivery_id' => 'd-1'], ['delivery_id' => 'd-2']]);
-        $deliveries = $this->makeClient(authToken: 'tok')->getDeliveries();
+        $deliveries = $this->makeClient(authToken: 'tok')->fetchAllDeliveries();
 
         self::assertSame('POST', $this->sentRequest(0)->getMethod());
         self::assertSame(self::BASE . '/deliveries/summary', (string) $this->sentRequest(0)->getUri());
@@ -238,7 +228,7 @@ final class ClientTest extends PicnicTestCase
     public function testGetCurrentDeliveriesPostsStatusFilter(): void
     {
         $this->queueJson([['delivery_id' => 'd-1']]);
-        $this->makeClient(authToken: 'tok')->getCurrentDeliveries();
+        $this->makeClient(authToken: 'tok')->fetchCurrentDeliveries();
 
         self::assertSame(self::BASE . '/deliveries/summary', (string) $this->sentRequest(0)->getUri());
         self::assertSame(['CURRENT'], $this->sentJsonBody(0));

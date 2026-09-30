@@ -9,8 +9,6 @@ namespace PhPicnic\Dto;
  */
 final readonly class DeliverySlot
 {
-    use HydratesFromArray;
-
     /**
      * @param array<mixed> $raw
      */
@@ -25,17 +23,34 @@ final readonly class DeliverySlot
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    public static function fromArray(array $data): self
+    public static function fromArray(array $payload): self
     {
         return new self(
-            slotId: self::str($data, 'slot_id'),
-            windowStart: self::str($data, 'window_start'),
-            windowEnd: self::str($data, 'window_end'),
-            cutOffTime: self::str($data, 'cut_off_time'),
-            isAvailable: self::bool($data, 'is_available'),
-            raw: $data,
+            slotId: PayloadReader::readString($payload, 'slot_id'),
+            windowStart: PayloadReader::readString($payload, 'window_start'),
+            windowEnd: PayloadReader::readString($payload, 'window_end'),
+            cutOffTime: PayloadReader::readString($payload, 'cut_off_time'),
+            isAvailable: PayloadReader::readBool($payload, 'is_available'),
+            raw: $payload,
         );
+    }
+
+    /**
+     * @param array<mixed> $items
+     *
+     * @return list<self>
+     */
+    public static function fromList(array $items): array
+    {
+        $hydratedItems = [];
+        foreach ($items as $item) {
+            if (is_array($item)) {
+                $hydratedItems[] = self::fromArray($item);
+            }
+        }
+
+        return $hydratedItems;
     }
 }

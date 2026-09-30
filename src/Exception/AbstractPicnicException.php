@@ -9,6 +9,6 @@ use RuntimeException;
 /**
  * Base type for every exception thrown by this library.
  */
-class PicnicException extends RuntimeException
+abstract class AbstractPicnicException extends RuntimeException
 {
 }

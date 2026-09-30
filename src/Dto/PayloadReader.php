@@ -9,46 +9,46 @@ namespace PhPicnic\Dto;
  * field shapes drift between API versions, so unknown/missing keys yield null
  * rather than errors, and the full payload is always kept in {@see $raw}.
  */
-trait HydratesFromArray
+final class PayloadReader
 {
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    private static function str(array $data, string $key): ?string
+    public static function readString(array $payload, string $key): ?string
     {
-        $value = $data[$key] ?? null;
+        $value = $payload[$key] ?? null;
 
         return is_string($value) ? $value : (is_int($value) || is_float($value) ? (string) $value : null);
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    private static function int(array $data, string $key): ?int
+    public static function readInt(array $payload, string $key): ?int
     {
-        $value = $data[$key] ?? null;
+        $value = $payload[$key] ?? null;
 
         return is_int($value) ? $value : (is_numeric($value) ? (int) $value : null);
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      */
-    private static function bool(array $data, string $key): ?bool
+    public static function readBool(array $payload, string $key): ?bool
     {
-        $value = $data[$key] ?? null;
+        $value = $payload[$key] ?? null;
 
         return is_bool($value) ? $value : null;
     }
 
     /**
-     * @param array<mixed> $data
+     * @param array<mixed> $payload
      *
      * @return array<mixed>
      */
-    private static function arr(array $data, string $key): array
+    public static function readArray(array $payload, string $key): array
     {
-        $value = $data[$key] ?? null;
+        $value = $payload[$key] ?? null;
 
         return is_array($value) ? $value : [];
     }

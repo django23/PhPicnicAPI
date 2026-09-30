@@ -16,7 +16,7 @@ use Psr\Http\Message\RequestInterface;
  * Base test case wiring a {@see Client} to an in-memory PSR-18 mock client, so
  * the suite never touches the network.
  */
-abstract class PicnicTestCase extends TestCase
+abstract class AbstractPicnicTestCase extends TestCase
 {
     protected MockClient $http;
 
@@ -37,7 +37,7 @@ abstract class PicnicTestCase extends TestCase
     protected function queueLoginThen(array ...$jsonBodies): void
     {
         $this->http->addResponse(
-            (new Response(200))->withHeader('x-picnic-auth', 'test-token'),
+            new Response(200)->withHeader('x-picnic-auth', 'test-token'),
         );
 
         foreach ($jsonBodies as $body) {
@@ -59,7 +59,7 @@ abstract class PicnicTestCase extends TestCase
 
     protected function makeClient(?string $authToken = null): Client
     {
-        return new Client(
+        return Client::create(
             username: 'user@example.com',
             password: 'secret',
             countryCode: CountryCode::NL,
@@ -77,7 +77,7 @@ abstract class PicnicTestCase extends TestCase
     protected function sentRequest(int $index): RequestInterface
     {
         $requests = $this->http->getRequests();
-        self::assertArrayHasKey($index, $requests, "No request was sent at index {$index}.");
+        self::assertArrayHasKey($index, $requests, sprintf('No request was sent at index %d.', $index));
 
         return $requests[$index];
     }
@@ -87,6 +87,9 @@ abstract class PicnicTestCase extends TestCase
      */
     protected function sentJsonBody(int $index): array
     {
-        return json_decode((string) $this->sentRequest($index)->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        $decodedBody = json_decode((string) $this->sentRequest($index)->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsArray($decodedBody);
+
+        return $decodedBody;
     }
 }

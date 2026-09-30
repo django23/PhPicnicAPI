@@ -8,7 +8,7 @@ use Http\Mock\Client as MockClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use PhPicnic\Enum\CountryCode;
-use PhPicnic\Exception\AuthenticationException;
+use PhPicnic\Exception\InvalidCredentialsException;
 use PhPicnic\Exception\PicnicApiException;
 use PhPicnic\Exception\TwoFactorException;
 use PhPicnic\Exception\TwoFactorRequiredException;
@@ -48,7 +48,7 @@ final class SessionTest extends TestCase
 
     public function testLoginCapturesRotatingTokenAndSendsHashedSecret(): void
     {
-        $this->http->addResponse((new Response(200))->withHeader('x-picnic-auth', 'tok-123'));
+        $this->http->addResponse(new Response(200)->withHeader('x-picnic-auth', 'tok-123'));
 
         $session = $this->makeSession();
         $session->login('user@example.com', 'secret');
@@ -58,7 +58,8 @@ final class SessionTest extends TestCase
 
         $request = $this->http->getRequests()[0];
         self::assertSame('30100;1.206.1-#15408', $request->getHeaderLine('x-picnic-agent'));
-        $body = json_decode((string) $request->getBody(), true);
+        $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
+        self::assertIsArray($body);
         self::assertSame(md5('secret'), $body['secret']);
         self::assertSame(30100, $body['client_id']);
     }
@@ -67,7 +68,7 @@ final class SessionTest extends TestCase
     {
         $this->http->addResponse(new Response(200));
 
-        $this->expectException(AuthenticationException::class);
+        $this->expectException(InvalidCredentialsException::class);
         $this->makeSession()->login('user@example.com', 'secret');
     }
 
@@ -75,9 +76,12 @@ final class SessionTest extends TestCase
     {
         $this->http->addResponse($this->json(['error' => ['code' => 'AUTH_INVALID_CRED', 'message' => 'Wrong']]));
 
-        $this->expectException(AuthenticationException::class);
-        $this->expectExceptionMessage('Wrong');
-        $this->makeSession()->login('user@example.com', 'secret');
+        try {
+            $this->makeSession()->login('user@example.com', 'secret');
+            self::fail('Expected InvalidCredentialsException.');
+        } catch (InvalidCredentialsException $invalidCredentialsException) {
+            self::assertSame('Wrong', $invalidCredentialsException->getMessage());
+        }
     }
 
     public function testLoginRequiring2faThrowsTwoFactorRequired(): void
@@ -87,15 +91,15 @@ final class SessionTest extends TestCase
         try {
             $this->makeSession()->login('user@example.com', 'secret');
             self::fail('Expected TwoFactorRequiredException.');
-        } catch (TwoFactorRequiredException $e) {
-            self::assertTrue($e->response['second_factor_authentication_required']);
+        } catch (TwoFactorRequiredException $twoFactorRequiredException) {
+            self::assertTrue($twoFactorRequiredException->response['second_factor_authentication_required']);
         }
     }
 
     public function testAuthTokenRotatesOnEveryResponse(): void
     {
         $session = $this->makeSession('preset-token');
-        $this->http->addResponse((new Response(200, [], '{}'))->withHeader('x-picnic-auth', 'rotated'));
+        $this->http->addResponse(new Response(200, [], '{}')->withHeader('x-picnic-auth', 'rotated'));
 
         $session->get('/user');
 
@@ -108,7 +112,7 @@ final class SessionTest extends TestCase
         $session = $this->makeSession('tok');
         $this->http->addResponse($this->json(['error' => ['code' => 'AUTH_ERROR', 'message' => 'Expired']]));
 
-        $this->expectException(AuthenticationException::class);
+        $this->expectException(InvalidCredentialsException::class);
         $session->get('/user');
     }
 
@@ -120,9 +124,9 @@ final class SessionTest extends TestCase
         try {
             $session->get('/user');
             self::fail('Expected PicnicApiException.');
-        } catch (PicnicApiException $e) {
-            self::assertSame(403, $e->statusCode);
-            self::assertSame('forbidden', $e->responseBody);
+        } catch (PicnicApiException $picnicApiException) {
+            self::assertSame(403, $picnicApiException->statusCode);
+            self::assertSame('forbidden', $picnicApiException->responseBody);
         }
     }
 
@@ -144,9 +148,9 @@ final class SessionTest extends TestCase
         try {
             $session->twoFactor('/user/2fa/verify', ['otp' => '000000']);
             self::fail('Expected TwoFactorException.');
-        } catch (TwoFactorException $e) {
-            self::assertSame('INVALID_OTP', $e->errorCode);
-            self::assertSame('Bad code', $e->getMessage());
+        } catch (TwoFactorException $twoFactorException) {
+            self::assertSame('INVALID_OTP', $twoFactorException->errorCode);
+            self::assertSame('Bad code', $twoFactorException->getMessage());
         }
     }
 

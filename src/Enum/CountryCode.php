@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace PhPicnic\Enum;
 
-use PhPicnic\Exception\PicnicException;
+use PhPicnic\Exception\UnsupportedCountryException;
 
 /**
  * Picnic storefronts that this client supports.
@@ -19,7 +19,7 @@ enum CountryCode: string
     /**
      * Resolve a {@see CountryCode} from itself or a (case-insensitive) string.
      *
-     * @throws PicnicException when the country is not supported
+     * @throws UnsupportedCountryException when the country is not supported
      */
     public static function parse(self|string $country): self
     {
@@ -30,7 +30,7 @@ enum CountryCode: string
         $normalized = strtoupper(trim($country));
 
         return self::tryFrom($normalized)
-            ?? throw new PicnicException(sprintf(
+            ?? throw new UnsupportedCountryException(sprintf(
                 'Unsupported country code "%s". Supported: %s.',
                 $country,
                 implode(', ', array_map(static fn (self $c): string => $c->value, self::cases())),

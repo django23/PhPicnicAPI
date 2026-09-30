@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace PhPicnic\Tests\Search;
 
+use PhPicnic\Dto\Product;
 use PhPicnic\Search\SearchResultParser;
 use PHPUnit\Framework\TestCase;
 
@@ -24,7 +25,7 @@ final class SearchResultParserTest extends TestCase
         $products = SearchResultParser::parse($tree);
 
         self::assertCount(2, $products);
-        self::assertSame(['1', '2'], array_map(static fn ($p) => $p->id, $products));
+        self::assertSame(['1', '2'], array_map(static fn (Product $p): ?string => $p->id, $products));
         self::assertSame('a1', $products[0]->soleArticleId);
         self::assertSame('a2', $products[1]->soleArticleId);
     }

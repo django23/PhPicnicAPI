@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace PhPicnic\Tests;
 
 use PhPicnic\Enum\CountryCode;
-use PhPicnic\Exception\PicnicException;
+use PhPicnic\Exception\UnsupportedCountryException;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
@@ -35,9 +35,11 @@ final class CountryCodeTest extends TestCase
 
     public function testParseRejectsUnsupportedCountry(): void
     {
-        $this->expectException(PicnicException::class);
-        $this->expectExceptionMessage('Unsupported country code "US"');
-
-        CountryCode::parse('US');
+        try {
+            CountryCode::parse('US');
+            self::fail('Expected UnsupportedCountryException.');
+        } catch (UnsupportedCountryException $unsupportedCountryException) {
+            self::assertStringContainsString('Unsupported country code "US"', $unsupportedCountryException->getMessage());
+        }
     }
 }

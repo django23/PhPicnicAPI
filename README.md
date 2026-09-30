@@ -45,13 +45,13 @@ require 'vendor/autoload.php';
 use PhPicnic\Client;
 use PhPicnic\Enum\CountryCode;
 
-$picnic = new Client(
+$picnic = Client::create(
     username: 'your@email.here',
     password: 'your-password',
     countryCode: CountryCode::NL, // or 'NL' | 'DE' | 'BE' | 'FR'
 );
 
-// Authentication is lazy — it happens on your first call. Call ->login() to do it eagerly.
+// Authentication is lazy — it happens on your first call. Call ->authenticate() to do it eagerly.
 ```
 
 ### Two-factor authentication
@@ -64,11 +64,11 @@ use PhPicnic\Enum\TwoFactorChannel;
 use PhPicnic\Exception\TwoFactorRequiredException;
 
 try {
-    $picnic->login();
+    $picnic->authenticate();
 } catch (TwoFactorRequiredException $e) {
-    $picnic->generate2FA(TwoFactorChannel::SMS); // or 'EMAIL'
+    $picnic->requestTwoFactorCode(TwoFactorChannel::SMS); // or 'EMAIL'
     // ...prompt the user for the code they received...
-    $picnic->verify2FA('123456');
+    $picnic->verifyTwoFactorCode('123456');
 }
 ```
 
@@ -77,10 +77,10 @@ try {
 Every login round-trips the network. Cache the token and reuse it to skip re-authenticating:
 
 ```php
-$token = $picnic->login()->getAuthToken();
+$token = $picnic->authenticate()->currentAuthToken();
 // ...store $token somewhere...
 
-$picnic = new Client(
+$picnic = Client::create(
     username: 'your@email.here',
     password: 'your-password',
     countryCode: CountryCode::NL,
@@ -91,24 +91,24 @@ $picnic = new Client(
 ### Searching for a product
 
 Picnic's search now returns a UI tree; the client parses it into `Product` objects. Use
-`searchRaw()` if you need the untouched response.
+`searchProductsRawResponse()` if you need the untouched response.
 
 ```php
 use PhPicnic\Dto\Product;
 
-$products = $picnic->search('coffee'); // list<Product>
+$products = $picnic->searchProductsByTerm('coffee'); // list<Product>
 foreach ($products as $product) {
     echo $product->name, ' — €', number_format(($product->displayPrice ?? 0) / 100, 2), "\n";
     // $product->id, ->unitQuantity, ->imageId, ->soleArticleId, ->raw (full payload)
 }
 
-$raw = $picnic->searchRaw('coffee'); // array — the full PML tree
+$raw = $picnic->searchProductsRawResponse('coffee'); // array — the full PML tree
 ```
 
 ### Check the cart
 
 ```php
-$cart = $picnic->getCart();          // Cart DTO
+$cart = $picnic->fetchShoppingCart();          // Cart DTO
 $cart->totalPrice;                   // cents
 foreach ($cart->items as $item) { /* CartItem */ }
 $cart->raw;                          // full payload for anything unmapped
@@ -119,30 +119,30 @@ $cart->raw;                          // full payload for anything unmapped
 All of these return the updated `Cart`.
 
 ```php
-$picnic->addProduct('10511523', 2);                       // add 2 of one product
-$picnic->addProducts(['10511523' => 2, '20622634' => 1]); // batch add (id => quantity)
-$picnic->removeProduct('10511523');                       // remove 1
-$picnic->clearCart();                                     // empty the cart
-$picnic->setDeliverySlot('slot-id');                      // pick a delivery slot
+$picnic->addProductToCart('10511523', 2);                       // add 2 of one product
+$picnic->addMultipleProductsToCart(['10511523' => 2, '20622634' => 1]); // batch add (id => quantity)
+$picnic->removeProductFromCart('10511523');                       // remove 1
+$picnic->emptyShoppingCart();                                     // empty the cart
+$picnic->selectDeliverySlotForCart('slot-id');                      // pick a delivery slot
 ```
 
 ### Deliveries & slots
 
 ```php
-$picnic->getDeliverySlots();                  // list<DeliverySlot>
-$picnic->getCurrentDeliveries();              // list<Delivery> — placed but not yet delivered
-$picnic->getDeliveries();                     // list<Delivery> — all (POSTs /deliveries/summary)
-$picnic->getDelivery('delivery-id');          // Delivery (now a GET)
-$picnic->getDeliveryScenario('delivery-id');  // array — live routing tree
-$picnic->getDeliveryPosition('delivery-id');  // array — live driver position / ETA
+$picnic->fetchAvailableDeliverySlots();                  // list<DeliverySlot>
+$picnic->fetchCurrentDeliveries();              // list<Delivery> — placed but not yet delivered
+$picnic->fetchAllDeliveries();                     // list<Delivery> — all (POSTs /deliveries/summary)
+$picnic->fetchDeliveryById('delivery-id');          // Delivery (now a GET)
+$picnic->fetchDeliveryRoutingScenario('delivery-id');  // array — live routing tree
+$picnic->fetchDeliveryDriverPosition('delivery-id');  // array — live driver position / ETA
 ```
 
 ### Lists
 
 ```php
-$picnic->getList();                       // all lists
-$picnic->getList('list-id');              // a single list
-$picnic->getSublist('list-id', 'sub-id'); // a sublist
+$picnic->fetchAllShoppingLists();                       // all lists
+$picnic->fetchShoppingListById('list-id');              // a single list
+$picnic->fetchShoppingListSublist('list-id', 'sub-id'); // a sublist
 ```
 
 ### DTOs
@@ -155,12 +155,12 @@ is lenient: known fields are typed (nullable), and the complete payload is alway
 ### Error handling
 
 ```php
-use PhPicnic\Exception\AuthenticationException;
+use PhPicnic\Exception\InvalidCredentialsException;
 use PhPicnic\Exception\PicnicApiException;
 
 try {
-    $picnic->getUser();
-} catch (AuthenticationException $e) {
+    $picnic->fetchLoggedInUser();
+} catch (InvalidCredentialsException $e) {
     // bad credentials / missing token
 } catch (PicnicApiException $e) {
     $e->getMessage();   // human-readable
@@ -174,7 +174,7 @@ try {
 Pass your own PSR-18 client and PSR-17 factories (handy for timeouts, proxies, logging, or tests):
 
 ```php
-$picnic = new Client(
+$picnic = Client::create(
     username: '...',
     password: '...',
     countryCode: CountryCode::NL,
