@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 namespace PhPicnic\Action;
 
-use PhPicnic\AuthenticatedApi;
+use PhPicnic\Enum\ApiEndpoint;
+use PhPicnic\LazyLoginApi;
 
 /**
  * Search for products and return the untouched PML UI tree.
  */
 final readonly class SearchProductsRawResponse
 {
-    public function __construct(private AuthenticatedApi $api)
+    public function __construct(private LazyLoginApi $api)
     {
     }
 
@@ -20,6 +21,6 @@ final readonly class SearchProductsRawResponse
      */
     public function execute(string $searchTerm): array
     {
-        return $this->api->get('/pages/search-page-results?search_term=' . rawurlencode($searchTerm));
+        return $this->api->get(ApiEndpoint::SEARCH_PAGE_RESULTS->path($searchTerm));
     }
 }

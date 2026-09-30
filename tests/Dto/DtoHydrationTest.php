@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace PhPicnic\Tests\Dto;
 
 use PhPicnic\Dto\Cart;
+use PhPicnic\Dto\CartItem;
 use PhPicnic\Dto\Delivery;
+use PhPicnic\Dto\DeliverySlot;
 use PhPicnic\Dto\Product;
 use PhPicnic\Dto\User;
+use PhPicnic\Exception\MalformedResponseException;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 
 final class DtoHydrationTest extends TestCase
@@ -59,14 +63,40 @@ final class DtoHydrationTest extends TestCase
 
         self::assertSame('d-1', $delivery->deliveryId);
         self::assertSame('s-9', $delivery->slotId);
-        self::assertSame('10:00', $delivery->eta2Start);
+        self::assertSame('10:00', $delivery->estimatedArrivalStart);
         self::assertSame(['o-1', 'o-2'], $delivery->orderIds);
     }
 
-    public function testDefaultsWhenFieldsMissing(): void
+    public function testOptionalFieldsDefaultToNullWhenMissing(): void
     {
-        $user = User::fromArray([]);
-        self::assertNull($user->userId);
-        self::assertSame([], $user->raw);
+        $user = User::fromArray(['user_id' => 'u-1']);
+
+        self::assertNull($user->firstName);
+        self::assertSame(['user_id' => 'u-1'], $user->raw);
+    }
+
+    /**
+     * @param class-string             $dtoClass
+     * @param array<string, mixed>     $payloadWithoutId
+     */
+    #[DataProvider('dtosThatRequireAnId')]
+    public function testMissingRequiredIdThrows(string $dtoClass, array $payloadWithoutId): void
+    {
+        $this->expectException(MalformedResponseException::class);
+
+        $dtoClass::fromArray($payloadWithoutId);
+    }
+
+    /**
+     * @return iterable<string, array{class-string, array<string, mixed>}>
+     */
+    public static function dtosThatRequireAnId(): iterable
+    {
+        yield 'user' => [User::class, ['firstname' => 'Ada']];
+        yield 'product' => [Product::class, ['name' => 'Coffee']];
+        yield 'cart' => [Cart::class, ['items' => []]];
+        yield 'cart item' => [CartItem::class, ['count' => 1]];
+        yield 'delivery' => [Delivery::class, ['status' => 'CURRENT']];
+        yield 'delivery slot' => [DeliverySlot::class, ['window_start' => '10:00']];
     }
 }

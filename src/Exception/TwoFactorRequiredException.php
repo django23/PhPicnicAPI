@@ -6,8 +6,8 @@ namespace PhPicnic\Exception;
 
 /**
  * Thrown when login succeeds with credentials but the account requires a second
- * factor. Trigger delivery with {@see \PhPicnic\Client::generate2FA()} and finish
- * with {@see \PhPicnic\Client::verify2FA()}.
+ * factor. Trigger delivery with {@see \PhPicnic\Client::requestTwoFactorCode()} and finish
+ * with {@see \PhPicnic\Client::verifyTwoFactorCode()}.
  */
 final class TwoFactorRequiredException extends AbstractAuthenticationException
 {

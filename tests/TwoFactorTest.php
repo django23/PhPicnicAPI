@@ -31,7 +31,7 @@ final class TwoFactorTest extends AbstractPicnicTestCase
         $this->http->addResponse(new Response(204)); // generate
         $this->http->addResponse(new Response(204)->withHeader('x-picnic-auth', 'verified-token')); // verify
 
-        $client = $this->makeClient(authToken: 'partial');
+        $client = $this->makeClient(cachedAuthToken: 'partial');
         $client->requestTwoFactorCode(TwoFactorChannel::SMS);
         $client->verifyTwoFactorCode('123456');
 
@@ -45,7 +45,7 @@ final class TwoFactorTest extends AbstractPicnicTestCase
     public function testGenerateAcceptsStringChannel(): void
     {
         $this->http->addResponse(new Response(204));
-        $this->makeClient(authToken: 'partial')->requestTwoFactorCode('email');
+        $this->makeClient(cachedAuthToken: 'partial')->requestTwoFactorCode('email');
 
         self::assertSame(['channel' => 'EMAIL'], $this->sentJsonBody(0));
     }
@@ -59,6 +59,6 @@ final class TwoFactorTest extends AbstractPicnicTestCase
         ));
 
         $this->expectException(TwoFactorException::class);
-        $this->makeClient(authToken: 'partial')->verifyTwoFactorCode('000000');
+        $this->makeClient(cachedAuthToken: 'partial')->verifyTwoFactorCode('000000');
     }
 }

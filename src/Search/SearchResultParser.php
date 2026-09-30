@@ -65,9 +65,9 @@ final class SearchResultParser
      */
     private static function findSoleArticleId(array $node): ?string
     {
-        $json = json_encode($node);
-        if ($json !== false && preg_match('/"sole_article_id":"(\w+)"/', $json, $m) === 1) {
-            return $m[1];
+        $nodeAsJson = json_encode($node);
+        if ($nodeAsJson !== false && preg_match('/"sole_article_id":"(\w+)"/', $nodeAsJson, $matches) === 1) {
+            return $matches[1];
         }
 
         return null;

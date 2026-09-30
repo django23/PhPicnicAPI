@@ -4,24 +4,19 @@ declare(strict_types=1);
 
 namespace PhPicnic;
 
-use Http\Discovery\Psr17Factory;
-use Http\Discovery\Psr18ClientDiscovery;
-use JsonException;
+use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\Exception\InvalidCredentialsException;
 use PhPicnic\Exception\PicnicApiException;
 use PhPicnic\Exception\TwoFactorException;
 use PhPicnic\Exception\TwoFactorRequiredException;
 use Psr\Http\Client\ClientExceptionInterface;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestFactoryInterface;
 use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\StreamFactoryInterface;
 
 /**
  * Transport + authentication layer.
  *
- * Owns a single, reused PSR-18 client, the persistent request headers, and the
- * JSON encode/decode + error handling shared by every API call. Notably it:
+ * Owns the persistent request headers (including the rotating auth token) and
+ * sends every API call through the {@see HttpTransport}. Notably it:
  *  - sends the client-identity headers Picnic now requires (x-picnic-agent / -did);
  *  - refreshes the rotating x-picnic-auth token from every response;
  *  - surfaces auth errors that Picnic returns as HTTP 200 with an error body;
@@ -31,50 +26,19 @@ final class Session
 {
     private const string AUTH_HEADER = 'x-picnic-auth';
 
-    /** Error codes Picnic returns (inside an HTTP 200 body) for auth failures. */
-    private const array AUTH_ERROR_CODES = ['AUTH_ERROR', 'AUTH_INVALID_CRED'];
-
     /** @var array<string, string> */
     private array $headers;
 
     public function __construct(
         private readonly PicnicConfig $config,
-        private readonly ClientInterface $httpClient,
-        private readonly RequestFactoryInterface $requestFactory,
-        private readonly StreamFactoryInterface $streamFactory,
+        private readonly HttpTransport $transport,
+        ?string $cachedAuthToken = null,
     ) {
-        $this->headers = [
-            'User-Agent' => $config->userAgent,
-            'Content-Type' => 'application/json; charset=UTF-8',
-            'x-picnic-agent' => $config->picnicAgent,
-            'x-picnic-did' => $config->picnicDeviceId,
-        ];
+        $this->headers = $config->defaultHeaders();
 
-        if ($config->authToken !== null && $config->authToken !== '') {
-            $this->headers[self::AUTH_HEADER] = $config->authToken;
+        if ($cachedAuthToken !== null && $cachedAuthToken !== '') {
+            $this->headers[self::AUTH_HEADER] = $cachedAuthToken;
         }
-    }
-
-    /**
-     * Build a session that auto-discovers the PSR-18 client and PSR-17
-     * factories for every dependency not passed explicitly.
-     */
-    public static function discover(
-        PicnicConfig $config,
-        ?ClientInterface $httpClient = null,
-        ?RequestFactoryInterface $requestFactory = null,
-        ?StreamFactoryInterface $streamFactory = null,
-    ): self {
-        // Http\Discovery\Psr17Factory is a discovery-backed wrapper implementing
-        // every PSR-17 factory interface; cheap to instantiate, no hard nyholm dep.
-        $discoveredPsr17Factory = new Psr17Factory();
-
-        return new self(
-            $config,
-            $httpClient ?? Psr18ClientDiscovery::find(),
-            $requestFactory ?? $discoveredPsr17Factory,
-            $streamFactory ?? $discoveredPsr17Factory,
-        );
     }
 
     public function isAuthenticated(): bool
@@ -91,29 +55,30 @@ final class Session
      * Exchange credentials for an auth token and store it for later requests.
      *
      * @throws TwoFactorRequiredException when the account needs a second factor
-     * @throws InvalidCredentialsException    on bad credentials / missing token
+     * @throws InvalidCredentialsException on bad credentials / missing token
      * @throws PicnicApiException
      */
-    public function login(string $username, string $password): void
+    public function login(Credentials $credentials): void
     {
         unset($this->headers[self::AUTH_HEADER]);
 
-        $loginResponse = $this->send('POST', '/user/login', [
-            'key' => $username,
-            'secret' => md5($password),
-            'client_id' => $this->config->clientId,
+        $loginResponse = $this->send('POST', ApiEndpoint::LOGIN->path(), [
+            'key' => $credentials->username,
+            'secret' => md5($credentials->password),
+            'client_id' => $this->config->identity->clientId,
         ]);
 
-        $loginResponseBody = $this->decode($loginResponse);
+        $loginResponseBody = JsonResponseDecoder::decode($loginResponse);
+        $error = ApiErrorBody::fromResponseBody($loginResponseBody);
 
         if (($loginResponseBody['second_factor_authentication_required'] ?? false) === true) {
             throw new TwoFactorRequiredException(
-                $this->errorMessage($loginResponseBody) ?? 'Two-factor authentication required.',
+                $error->message ?? 'Two-factor authentication required.',
                 $loginResponseBody,
             );
         }
 
-        $this->assertNoAuthError($loginResponseBody);
+        $this->assertNoAuthError($error);
 
         if (! $this->isAuthenticated()) {
             throw new InvalidCredentialsException(
@@ -131,23 +96,21 @@ final class Session
      * @throws TwoFactorException
      * @throws PicnicApiException
      */
-    public function twoFactor(string $path, array $payload): void
+    public function twoFactor(ApiEndpoint $endpoint, array $payload): void
     {
-        $response = $this->send('POST', $path, $payload);
+        $response = $this->send('POST', $endpoint->path(), $payload);
 
-        $rawResponseBody = (string) $response->getBody();
-        if ($response->getStatusCode() === 204 || $rawResponseBody === '') {
+        if ($response->getStatusCode() === 204 || (string) $response->getBody() === '') {
             return;
         }
 
-        $body = $this->decode($response);
-        $this->assertNoAuthError($body);
+        $error = ApiErrorBody::fromResponseBody(JsonResponseDecoder::decode($response));
+        $this->assertNoAuthError($error);
 
-        $code = $this->errorCode($body);
-        if ($code !== null) {
+        if ($error->code !== null) {
             throw new TwoFactorException(
-                $this->errorMessage($body) ?? 'Two-factor authentication failed.',
-                $code,
+                $error->message ?? 'Two-factor authentication failed.',
+                $error->code,
             );
         }
     }
@@ -183,8 +146,8 @@ final class Session
      */
     private function request(string $method, string $path, array|string|null $body = null): array
     {
-        $decodedBody = $this->decode($this->send($method, $path, $body));
-        $this->assertNoAuthError($decodedBody);
+        $decodedBody = JsonResponseDecoder::decode($this->send($method, $path, $body));
+        $this->assertNoAuthError(ApiErrorBody::fromResponseBody($decodedBody));
 
         return $decodedBody;
     }
@@ -196,7 +159,7 @@ final class Session
      */
     private function send(string $method, string $path, array|string|null $body = null): ResponseInterface
     {
-        $request = $this->requestFactory->createRequest($method, $this->config->baseUrl() . $path);
+        $request = $this->transport->createRequest($method, $this->config->location->baseUrl() . $path);
 
         foreach ($this->headers as $name => $value) {
             $request = $request->withHeader($name, $value);
@@ -204,11 +167,11 @@ final class Session
 
         if ($body !== null) {
             $jsonRequestBody = json_encode($body, JSON_THROW_ON_ERROR);
-            $request = $request->withBody($this->streamFactory->createStream($jsonRequestBody));
+            $request = $request->withBody($this->transport->createStream($jsonRequestBody));
         }
 
         try {
-            $response = $this->httpClient->sendRequest($request);
+            $response = $this->transport->sendRequest($request);
         } catch (ClientExceptionInterface $clientException) {
             throw new PicnicApiException(
                 sprintf('HTTP request to "%s" failed: %s', $path, $clientException->getMessage()),
@@ -244,65 +207,12 @@ final class Session
     }
 
     /**
-     * @return array<mixed>
-     *
-     * @throws PicnicApiException
-     */
-    private function decode(ResponseInterface $response): array
-    {
-        $body = (string) $response->getBody();
-        if ($body === '') {
-            return [];
-        }
-
-        try {
-            $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $jsonException) {
-            throw new PicnicApiException(
-                'Failed to decode JSON response from the Picnic API: ' . $jsonException->getMessage(),
-                $response->getStatusCode(),
-                $body,
-                $jsonException,
-            );
-        }
-
-        return is_array($decoded) ? $decoded : ['value' => $decoded];
-    }
-
-    /**
-     * @param array<mixed> $body
-     *
      * @throws InvalidCredentialsException
      */
-    private function assertNoAuthError(array $body): void
+    private function assertNoAuthError(ApiErrorBody $error): void
     {
-        $code = $this->errorCode($body);
-        if ($code !== null && in_array($code, self::AUTH_ERROR_CODES, true)) {
-            throw new InvalidCredentialsException(
-                $this->errorMessage($body) ?? 'Picnic authentication error.',
-            );
+        if ($error->isAuthError()) {
+            throw new InvalidCredentialsException($error->message ?? 'Picnic authentication error.');
         }
-    }
-
-    /**
-     * @param array<mixed> $body
-     */
-    private function errorCode(array $body): ?string
-    {
-        $error = $body['error'] ?? null;
-        $code = is_array($error) ? ($error['code'] ?? null) : null;
-
-        return is_string($code) ? $code : null;
-    }
-
-    /**
-     * @param array<mixed> $body
-     */
-    private function errorMessage(array $body): ?string
-    {
-        $error = $body['error'] ?? null;
-        $message = is_array($error) ? ($error['message'] ?? null) : null;
-
-        return is_string($message) ? $message : null;
     }
 }

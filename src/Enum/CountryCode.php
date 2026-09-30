@@ -27,13 +27,13 @@ enum CountryCode: string
             return $country;
         }
 
-        $normalized = strtoupper(trim($country));
+        $normalizedCountry = strtoupper(trim($country));
 
-        return self::tryFrom($normalized)
+        return self::tryFrom($normalizedCountry)
             ?? throw new UnsupportedCountryException(sprintf(
                 'Unsupported country code "%s". Supported: %s.',
                 $country,
-                implode(', ', array_map(static fn (self $c): string => $c->value, self::cases())),
+                implode(', ', array_map(static fn (self $supportedCountry): string => $supportedCountry->value, self::cases())),
             ));
     }
 }

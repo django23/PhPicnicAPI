@@ -15,7 +15,7 @@ final readonly class CartItem
      * @param array<mixed> $raw
      */
     public function __construct(
-        public ?string $id,
+        public string $id,
         public ?int $count,
         public ?int $price,
         public array $raw,
@@ -28,9 +28,9 @@ final readonly class CartItem
     public static function fromArray(array $payload): self
     {
         return new self(
-            id: PayloadReader::readString($payload, 'id'),
+            id: PayloadReader::readRequiredString($payload, 'id'),
             count: PayloadReader::readInt($payload, 'count'),
-            price: PayloadReader::readInt($payload, 'price') ?? PayloadReader::readInt($payload, 'display_price'),
+            price: PayloadReader::readFirstInt($payload, 'price', 'display_price'),
             raw: $payload,
         );
     }

@@ -4,25 +4,26 @@ declare(strict_types=1);
 
 namespace PhPicnic;
 
+use PhPicnic\Exception\TwoFactorRequiredException;
+
 /**
- * Gives actions authenticated GET/POST access to the Picnic API. Logs in lazily
- * with the stored credentials the first time no auth token is present.
+ * Authenticated GET/POST access for the actions. The side effect is in the
+ * name: whenever no auth token is present, the first call logs in.
  */
-final readonly class AuthenticatedApi
+final readonly class LazyLoginApi
 {
     public function __construct(
         private Session $session,
-        private string $username,
-        private string $password,
+        private Credentials $credentials,
     ) {
     }
 
     /**
-     * @throws Exception\TwoFactorRequiredException when the account needs 2FA
+     * @throws TwoFactorRequiredException when the account needs 2FA
      */
     public function login(): void
     {
-        $this->session->login($this->username, $this->password);
+        $this->session->login($this->credentials);
     }
 
     /**
@@ -30,7 +31,7 @@ final readonly class AuthenticatedApi
      */
     public function get(string $path): array
     {
-        $this->loginWhenNotAuthenticated();
+        $this->loginWhenNoAuthToken();
 
         return $this->session->get($path);
     }
@@ -42,12 +43,12 @@ final readonly class AuthenticatedApi
      */
     public function post(string $path, array|string $payload = []): array
     {
-        $this->loginWhenNotAuthenticated();
+        $this->loginWhenNoAuthToken();
 
         return $this->session->post($path, $payload);
     }
 
-    private function loginWhenNotAuthenticated(): void
+    private function loginWhenNoAuthToken(): void
     {
         if (! $this->session->isAuthenticated()) {
             $this->login();

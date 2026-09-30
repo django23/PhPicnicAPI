@@ -8,7 +8,8 @@ use Http\Mock\Client as MockClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
 use PhPicnic\Client;
-use PhPicnic\Enum\CountryCode;
+use PhPicnic\Credentials;
+use PhPicnic\HttpTransport;
 use PHPUnit\Framework\TestCase;
 use Psr\Http\Message\RequestInterface;
 
@@ -57,17 +58,11 @@ abstract class AbstractPicnicTestCase extends TestCase
         ));
     }
 
-    protected function makeClient(?string $authToken = null): Client
+    protected function makeClient(?string $cachedAuthToken = null): Client
     {
         return Client::create(
-            username: 'user@example.com',
-            password: 'secret',
-            countryCode: CountryCode::NL,
-            httpClient: $this->http,
-            requestFactory: $this->psr17,
-            streamFactory: $this->psr17,
-            apiVersion: '15',
-            authToken: $authToken,
+            new Credentials('user@example.com', 'secret', $cachedAuthToken),
+            transport: new HttpTransport($this->http, $this->psr17, $this->psr17),
         );
     }
 

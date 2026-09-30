@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace PhPicnic\Action;
 
-use PhPicnic\AuthenticatedApi;
 use PhPicnic\Dto\Product;
+use PhPicnic\LazyLoginApi;
 use PhPicnic\Search\SearchResultParser;
 
 /**
@@ -13,7 +13,7 @@ use PhPicnic\Search\SearchResultParser;
  */
 final readonly class SearchProducts
 {
-    public function __construct(private AuthenticatedApi $api)
+    public function __construct(private LazyLoginApi $api)
     {
     }
 

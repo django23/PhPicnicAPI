@@ -20,20 +20,21 @@ library a typed, framework-agnostic foundation.
 ```php
 $dotenv = Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
-$picnic = \PhPicnic\Client::create($_ENV['username'], $_ENV['password'], $_ENV['country_code']);
+$picnic = new \PhPicnic\Client($_ENV['username'], $_ENV['password'], $_ENV['country_code']);
 ```
 
 **After** — everything is explicit; no `$_ENV`, no phpdotenv needed:
 
 ```php
+use PhPicnic\ApiLocation;
 use PhPicnic\Client;
+use PhPicnic\Credentials;
 use PhPicnic\Enum\CountryCode;
+use PhPicnic\PicnicConfig;
 
 $picnic = Client::create(
-    username: 'your@email.here',
-    password: 'your-password',
-    countryCode: CountryCode::NL, // or 'NL' | 'DE' | 'BE' | 'FR'
-    apiVersion: '15',             // optional
+    new Credentials('your@email.here', 'your-password'),
+    new PicnicConfig(new ApiLocation(CountryCode::NL, apiVersion: '15')), // optional
 );
 ```
 
@@ -91,17 +92,24 @@ Login throws `TwoFactorRequiredException` for 2FA accounts; call `requestTwoFact
 
 ## Method and class renames (naming pass)
 
-Names now say what they do. `new Client(...)` became `Client::create(...)` (it auto-discovers the PSR-18/17 dependencies).
+Names now say what they do, and endpoints are grouped into resources: `$picnic->cart()`, `->products()`, `->deliveries()`, `->shoppingLists()`. `new Client(...)` became `Client::create(new Credentials(...), ...)` (it auto-discovers the PSR-18/17 dependencies).
 
 | Old | New |
 |---|---|
 | `getUser` | `fetchLoggedInUser` |
-| `search` / `searchRaw` | `searchProductsByTerm` / `searchProductsRawResponse` |
-| `getCart` / `clearCart` | `fetchShoppingCart` / `emptyShoppingCart` |
-| `addProduct` / `addProducts` / `removeProduct` | `addProductToCart` / `addMultipleProductsToCart` / `removeProductFromCart` |
-| `setDeliverySlot` / `getDeliverySlots` | `selectDeliverySlotForCart` / `fetchAvailableDeliverySlots` |
-| `getList` | `fetchAllShoppingLists` / `fetchShoppingListById` |
-| `getDelivery` / `getDeliveries` / `getCurrentDeliveries` | `fetchDeliveryById` / `fetchAllDeliveries` / `fetchCurrentDeliveries` |
+| `search` / `searchRaw` | `products()->search` / `products()->searchRawResponse` |
+| `getCart` / `clearCart` | `cart()->fetch` / `cart()->empty` |
+| `addProduct` / `addProducts` / `removeProduct` | `cart()->addProduct` / `cart()->addMultipleProducts` / `cart()->removeProduct` |
+| `setDeliverySlot` / `getDeliverySlots` | `cart()->selectDeliverySlot` / `deliveries()->fetchAvailableSlots` |
+| `getList` / `getSublist` | `shoppingLists()->fetchAll` or `fetchById` / `fetchSublist` |
+| `getDelivery` / `getDeliveries` / `getCurrentDeliveries` | `deliveries()->fetchById` / `fetchAll` / `fetchCurrent` |
+| `getDeliveryScenario` / `getDeliveryPosition` | `deliveries()->fetchRoutingScenario` / `fetchDriverPosition` |
 | `login` / `generate2FA` / `verify2FA` / `getAuthToken` | `authenticate` / `requestTwoFactorCode` / `verifyTwoFactorCode` / `currentAuthToken` |
 
-Exceptions: `PicnicException` is now `AbstractPicnicException`, `AuthenticationException` is `AbstractAuthenticationException`. Bad credentials throw `InvalidCredentialsException`, unknown countries throw `UnsupportedCountryException`.
+Other changes:
+
+- `authToken:` constructor argument is now `Credentials::$cachedAuthToken`; custom PSR objects go in an `HttpTransport`.
+- `PicnicConfig` is split into `ApiLocation` (country, version, base URL override) and `ClientIdentity` (agent and device headers).
+- `Delivery::$eta2Start` / `$eta2End` are now `$estimatedArrivalStart` / `$estimatedArrivalEnd`.
+- Ids (`User::$userId`, `Product::$id`, `Cart::$id`, `CartItem::$id`, `Delivery::$deliveryId`, `DeliverySlot::$slotId`) are non-null. A response without one throws `MalformedResponseException`.
+- Exceptions: `PicnicException` is now `AbstractPicnicException`, `AuthenticationException` is `AbstractAuthenticationException`. Bad credentials throw `InvalidCredentialsException`, unknown countries throw `UnsupportedCountryException`.

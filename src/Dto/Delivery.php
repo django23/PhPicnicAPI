@@ -14,11 +14,11 @@ final readonly class Delivery
      * @param array<mixed> $raw
      */
     public function __construct(
-        public ?string $deliveryId,
+        public string $deliveryId,
         public ?string $status,
         public ?string $slotId,
-        public ?string $eta2Start,
-        public ?string $eta2End,
+        public ?string $estimatedArrivalStart,
+        public ?string $estimatedArrivalEnd,
         public array $orderIds,
         public array $raw,
     ) {
@@ -30,40 +30,34 @@ final readonly class Delivery
     public static function fromArray(array $payload): self
     {
         $slot = PayloadReader::readArray($payload, 'slot');
-        $eta2 = PayloadReader::readArray($payload, 'eta2');
-
-        $orderIds = [];
-        foreach (PayloadReader::readArray($payload, 'orders') as $order) {
-            if (is_array($order) && isset($order['id']) && is_string($order['id'])) {
-                $orderIds[] = $order['id'];
-            }
-        }
+        $estimatedArrival = PayloadReader::readArray($payload, 'eta2');
 
         return new self(
-            deliveryId: PayloadReader::readString($payload, 'delivery_id') ?? PayloadReader::readString($payload, 'id'),
+            deliveryId: PayloadReader::readRequiredString($payload, 'delivery_id', 'id'),
             status: PayloadReader::readString($payload, 'status'),
             slotId: PayloadReader::readString($slot, 'slot_id') ?? PayloadReader::readString($payload, 'slot_id'),
-            eta2Start: PayloadReader::readString($eta2, 'start'),
-            eta2End: PayloadReader::readString($eta2, 'end'),
-            orderIds: $orderIds,
+            estimatedArrivalStart: PayloadReader::readString($estimatedArrival, 'start'),
+            estimatedArrivalEnd: PayloadReader::readString($estimatedArrival, 'end'),
+            orderIds: self::readOrderIds($payload),
             raw: $payload,
         );
     }
 
     /**
-     * @param array<mixed> $items
+     * @param array<mixed> $payload
      *
-     * @return list<self>
+     * @return list<string>
      */
-    public static function fromList(array $items): array
+    private static function readOrderIds(array $payload): array
     {
-        $hydratedItems = [];
-        foreach ($items as $item) {
-            if (is_array($item)) {
-                $hydratedItems[] = self::fromArray($item);
+        $orderIds = [];
+        foreach (PayloadReader::readArray($payload, 'orders') as $order) {
+            $orderId = is_array($order) ? PayloadReader::readString($order, 'id') : null;
+            if ($orderId !== null) {
+                $orderIds[] = $orderId;
             }
         }
 
-        return $hydratedItems;
+        return $orderIds;
     }
 }

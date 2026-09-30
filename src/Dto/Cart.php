@@ -15,7 +15,7 @@ final readonly class Cart
      * @param array<mixed>   $raw
      */
     public function __construct(
-        public ?string $id,
+        public string $id,
         public array $items,
         public ?int $totalCount,
         public ?int $totalPrice,
@@ -28,16 +28,9 @@ final readonly class Cart
      */
     public static function fromArray(array $payload): self
     {
-        $items = [];
-        foreach (PayloadReader::readArray($payload, 'items') as $item) {
-            if (is_array($item)) {
-                $items[] = CartItem::fromArray($item);
-            }
-        }
-
         return new self(
-            id: PayloadReader::readString($payload, 'id'),
-            items: $items,
+            id: PayloadReader::readRequiredString($payload, 'id'),
+            items: PayloadReader::hydrateList(PayloadReader::readArray($payload, 'items'), CartItem::fromArray(...)),
             totalCount: PayloadReader::readInt($payload, 'total_count'),
             totalPrice: PayloadReader::readInt($payload, 'total_price'),
             raw: $payload,

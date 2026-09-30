@@ -19,7 +19,7 @@ final readonly class Product
      * @param array<mixed> $raw          the full selling-unit payload
      */
     public function __construct(
-        public ?string $id,
+        public string $id,
         public ?string $name,
         public ?int $price,
         public ?int $displayPrice,
@@ -36,13 +36,13 @@ final readonly class Product
     public static function fromArray(array $payload): self
     {
         return new self(
-            id: PayloadReader::readString($payload, 'id'),
+            id: PayloadReader::readRequiredString($payload, 'id'),
             name: PayloadReader::readString($payload, 'name'),
             price: PayloadReader::readInt($payload, 'price'),
-            displayPrice: PayloadReader::readInt($payload, 'displayPrice') ?? PayloadReader::readInt($payload, 'display_price'),
-            unitQuantity: PayloadReader::readString($payload, 'unitQuantity') ?? PayloadReader::readString($payload, 'unit_quantity'),
-            imageId: PayloadReader::readString($payload, 'imageId') ?? PayloadReader::readString($payload, 'image_id'),
-            soleArticleId: PayloadReader::readString($payload, 'soleArticleId') ?? PayloadReader::readString($payload, 'sole_article_id'),
+            displayPrice: PayloadReader::readFirstInt($payload, 'displayPrice', 'display_price'),
+            unitQuantity: PayloadReader::readFirstString($payload, 'unitQuantity', 'unit_quantity'),
+            imageId: PayloadReader::readFirstString($payload, 'imageId', 'image_id'),
+            soleArticleId: PayloadReader::readFirstString($payload, 'soleArticleId', 'sole_article_id'),
             raw: $payload,
         );
     }

@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace PhPicnic\Action;
 
-use PhPicnic\AuthenticatedApi;
 use PhPicnic\Dto\DeliverySlot;
+use PhPicnic\Dto\PayloadReader;
+use PhPicnic\Enum\ApiEndpoint;
+use PhPicnic\LazyLoginApi;
 
 /**
  * Delivery slots that can be chosen for the cart.
  */
 final readonly class FetchAvailableDeliverySlots
 {
-    public function __construct(private AuthenticatedApi $api)
+    public function __construct(private LazyLoginApi $api)
     {
     }
 
@@ -21,11 +23,11 @@ final readonly class FetchAvailableDeliverySlots
      */
     public function execute(): array
     {
-        $responsePayload = $this->api->get('/cart/delivery_slots');
+        $responsePayload = $this->api->get(ApiEndpoint::CART_DELIVERY_SLOTS->path());
         $slotPayloads = isset($responsePayload['delivery_slots']) && is_array($responsePayload['delivery_slots'])
             ? $responsePayload['delivery_slots']
             : $responsePayload;
 
-        return DeliverySlot::fromList($slotPayloads);
+        return PayloadReader::hydrateList($slotPayloads, DeliverySlot::fromArray(...));
     }
 }

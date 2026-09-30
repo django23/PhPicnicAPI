@@ -24,10 +24,15 @@ CI (`.github/workflows/ci.yml`) runs `composer check` on PHP 8.4 and 8.5 after `
 ## Architecture
 
 ```
-Client (façade, one method per endpoint, delegates to Action/*; built via Client::create())
-  └─ Session (PSR-18 transport, auth, JSON, error mapping)
-       └─ PicnicConfig (base URL, api version, agent/device headers, initial token)
-Dto/*      readonly entities hydrated via PayloadReader, each keeps ->raw
+Client (built via Client::create(Credentials, PicnicConfig, ?HttpTransport))
+  ├─ Resource/*   cart(), products(), deliveries(), shoppingLists(): the autocomplete surface
+  │    └─ Action/*   one class per endpoint, execute()
+  │         └─ LazyLoginApi (logs in on first call when no token)
+  │              └─ Session (auth token, headers, error mapping)
+  │                   ├─ HttpTransport (PSR-18/17), JsonResponseDecoder, ApiErrorBody
+  │                   └─ PicnicConfig = ApiLocation + ClientIdentity
+Enum/ApiEndpoint   every API path lives here, never inline
+Dto/*      readonly entities hydrated via PayloadReader, each keeps ->raw; ids are required and throw MalformedResponseException
 Search/SearchResultParser   flattens Picnic's PML UI tree into products
 Enum/, Exception/
 ```
@@ -36,8 +41,8 @@ Non-obvious behaviors that live in `Session` and must be preserved:
 
 - **Auth token rotates**: `x-picnic-auth` is captured from every response, not only login.
 - **Auth errors come as HTTP 200** with `{"error":{"code":"AUTH_ERROR"|"AUTH_INVALID_CRED"}}` and are converted to exceptions.
-- **2FA**: login returning `second_factor_authentication_required: true` throws `TwoFactorRequiredException`; `generate2FA`/`verify2FA` may answer 204 or an empty body.
-- Picnic requires the `x-picnic-agent` / `x-picnic-did` / okhttp `User-Agent` headers on every request (configurable in `PicnicConfig`).
+- **2FA**: login returning `second_factor_authentication_required: true` throws `TwoFactorRequiredException`; `requestTwoFactorCode`/`verifyTwoFactorCode` may answer 204 or an empty body.
+- Picnic requires the `x-picnic-agent` / `x-picnic-did` / okhttp `User-Agent` headers on every request (configurable through `ClientIdentity` in `PicnicConfig`).
 - Login is lazy in `Client` (first call), `authenticate()` forces it. The secret is `md5(password)`.
 - Some endpoints return raw UI trees (`searchProductsRawResponse`, delivery scenario/position, lists) and intentionally stay `array`. Structured endpoints return DTOs.
 
@@ -45,6 +50,7 @@ Non-obvious behaviors that live in `Session` and must be preserved:
 
 - `declare(strict_types=1)`, `final` classes, typed signatures, exceptions from `src/Exception`.
 - Every endpoint needs a test asserting method + URL + request body, and one for the decoded response. Tests use `php-http/mock-client` (no network), see `tests/Support/AbstractPicnicTestCase.php` and `tests/ClientTest.php`.
+- New endpoint = an `ApiEndpoint` case, an `Action/*` class, a method on the matching `Resource/*`, and a test.
 - New structured endpoints get a DTO following the `PayloadReader` + `->raw` pattern.
 
 ## Reference docs in repo

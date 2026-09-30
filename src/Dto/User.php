@@ -13,7 +13,7 @@ final readonly class User
      * @param array<mixed> $raw
      */
     public function __construct(
-        public ?string $userId,
+        public string $userId,
         public ?string $firstName,
         public ?string $lastName,
         public ?string $contactEmail,
@@ -28,10 +28,10 @@ final readonly class User
     public static function fromArray(array $payload): self
     {
         return new self(
-            userId: PayloadReader::readString($payload, 'user_id') ?? PayloadReader::readString($payload, 'id'),
-            firstName: PayloadReader::readString($payload, 'firstname') ?? PayloadReader::readString($payload, 'first_name'),
-            lastName: PayloadReader::readString($payload, 'lastname') ?? PayloadReader::readString($payload, 'last_name'),
-            contactEmail: PayloadReader::readString($payload, 'contact_email') ?? PayloadReader::readString($payload, 'email'),
+            userId: PayloadReader::readRequiredString($payload, 'user_id', 'id'),
+            firstName: PayloadReader::readFirstString($payload, 'firstname', 'first_name'),
+            lastName: PayloadReader::readFirstString($payload, 'lastname', 'last_name'),
+            contactEmail: PayloadReader::readFirstString($payload, 'contact_email', 'email'),
             phone: PayloadReader::readString($payload, 'phone'),
             raw: $payload,
         );

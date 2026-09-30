@@ -7,11 +7,13 @@ namespace PhPicnic\Tests;
 use Http\Mock\Client as MockClient;
 use Nyholm\Psr7\Factory\Psr17Factory;
 use Nyholm\Psr7\Response;
-use PhPicnic\Enum\CountryCode;
+use PhPicnic\Credentials;
+use PhPicnic\Enum\ApiEndpoint;
 use PhPicnic\Exception\InvalidCredentialsException;
 use PhPicnic\Exception\PicnicApiException;
 use PhPicnic\Exception\TwoFactorException;
 use PhPicnic\Exception\TwoFactorRequiredException;
+use PhPicnic\HttpTransport;
 use PhPicnic\PicnicConfig;
 use PhPicnic\Session;
 use PHPUnit\Framework\TestCase;
@@ -28,14 +30,18 @@ final class SessionTest extends TestCase
         $this->psr17 = new Psr17Factory();
     }
 
-    private function makeSession(?string $authToken = null): Session
+    private function makeSession(?string $cachedAuthToken = null): Session
     {
         return new Session(
-            new PicnicConfig(CountryCode::NL, '15', $authToken),
-            $this->http,
-            $this->psr17,
-            $this->psr17,
+            new PicnicConfig(),
+            new HttpTransport($this->http, $this->psr17, $this->psr17),
+            $cachedAuthToken,
         );
+    }
+
+    private function credentials(): Credentials
+    {
+        return new Credentials('user@example.com', 'secret');
     }
 
     /**
@@ -51,7 +57,7 @@ final class SessionTest extends TestCase
         $this->http->addResponse(new Response(200)->withHeader('x-picnic-auth', 'tok-123'));
 
         $session = $this->makeSession();
-        $session->login('user@example.com', 'secret');
+        $session->login($this->credentials());
 
         self::assertTrue($session->isAuthenticated());
         self::assertSame('tok-123', $session->authToken());
@@ -69,7 +75,7 @@ final class SessionTest extends TestCase
         $this->http->addResponse(new Response(200));
 
         $this->expectException(InvalidCredentialsException::class);
-        $this->makeSession()->login('user@example.com', 'secret');
+        $this->makeSession()->login($this->credentials());
     }
 
     public function testLoginWithAuthErrorBodyThrows(): void
@@ -77,7 +83,7 @@ final class SessionTest extends TestCase
         $this->http->addResponse($this->json(['error' => ['code' => 'AUTH_INVALID_CRED', 'message' => 'Wrong']]));
 
         try {
-            $this->makeSession()->login('user@example.com', 'secret');
+            $this->makeSession()->login($this->credentials());
             self::fail('Expected InvalidCredentialsException.');
         } catch (InvalidCredentialsException $invalidCredentialsException) {
             self::assertSame('Wrong', $invalidCredentialsException->getMessage());
@@ -89,7 +95,7 @@ final class SessionTest extends TestCase
         $this->http->addResponse($this->json(['second_factor_authentication_required' => true]));
 
         try {
-            $this->makeSession()->login('user@example.com', 'secret');
+            $this->makeSession()->login($this->credentials());
             self::fail('Expected TwoFactorRequiredException.');
         } catch (TwoFactorRequiredException $twoFactorRequiredException) {
             self::assertTrue($twoFactorRequiredException->response['second_factor_authentication_required']);
@@ -135,7 +141,7 @@ final class SessionTest extends TestCase
         $session = $this->makeSession('tok');
         $this->http->addResponse(new Response(204));
 
-        $session->twoFactor('/user/2fa/verify', ['otp' => '123456']);
+        $session->twoFactor(ApiEndpoint::TWO_FACTOR_VERIFY, ['otp' => '123456']);
 
         self::assertSame(['otp' => '123456'], json_decode((string) $this->http->getRequests()[0]->getBody(), true));
     }
@@ -146,7 +152,7 @@ final class SessionTest extends TestCase
         $this->http->addResponse($this->json(['error' => ['code' => 'INVALID_OTP', 'message' => 'Bad code']]));
 
         try {
-            $session->twoFactor('/user/2fa/verify', ['otp' => '000000']);
+            $session->twoFactor(ApiEndpoint::TWO_FACTOR_VERIFY, ['otp' => '000000']);
             self::fail('Expected TwoFactorException.');
         } catch (TwoFactorException $twoFactorException) {
             self::assertSame('INVALID_OTP', $twoFactorException->errorCode);

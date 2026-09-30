@@ -42,14 +42,19 @@ In Symfony, `symfony/http-client` is discovered automatically; in Laravel, Guzzl
 
 require 'vendor/autoload.php';
 
+use PhPicnic\ApiLocation;
 use PhPicnic\Client;
+use PhPicnic\Credentials;
 use PhPicnic\Enum\CountryCode;
+use PhPicnic\PicnicConfig;
 
 $picnic = Client::create(
-    username: 'your@email.here',
-    password: 'your-password',
-    countryCode: CountryCode::NL, // or 'NL' | 'DE' | 'BE' | 'FR'
+    new Credentials('your@email.here', 'your-password'),
+    new PicnicConfig(new ApiLocation(CountryCode::NL)), // optional: 'NL' | 'DE' | 'BE' | 'FR', NL by default
 );
+
+// Everything is grouped by area:
+// $picnic->cart(), ->products(), ->deliveries(), ->shoppingLists(), ->fetchLoggedInUser()
 
 // Authentication is lazy — it happens on your first call. Call ->authenticate() to do it eagerly.
 ```
@@ -81,10 +86,7 @@ $token = $picnic->authenticate()->currentAuthToken();
 // ...store $token somewhere...
 
 $picnic = Client::create(
-    username: 'your@email.here',
-    password: 'your-password',
-    countryCode: CountryCode::NL,
-    authToken: $token, // reused — no login request
+    new Credentials('your@email.here', 'your-password', cachedAuthToken: $token), // reused: no login request
 );
 ```
 
@@ -96,19 +98,19 @@ Picnic's search now returns a UI tree; the client parses it into `Product` objec
 ```php
 use PhPicnic\Dto\Product;
 
-$products = $picnic->searchProductsByTerm('coffee'); // list<Product>
+$products = $picnic->products()->search('coffee'); // list<Product>
 foreach ($products as $product) {
     echo $product->name, ' — €', number_format(($product->displayPrice ?? 0) / 100, 2), "\n";
     // $product->id, ->unitQuantity, ->imageId, ->soleArticleId, ->raw (full payload)
 }
 
-$raw = $picnic->searchProductsRawResponse('coffee'); // array — the full PML tree
+$raw = $picnic->products()->searchRawResponse('coffee'); // array — the full PML tree
 ```
 
 ### Check the cart
 
 ```php
-$cart = $picnic->fetchShoppingCart();          // Cart DTO
+$cart = $picnic->cart()->fetch();          // Cart DTO
 $cart->totalPrice;                   // cents
 foreach ($cart->items as $item) { /* CartItem */ }
 $cart->raw;                          // full payload for anything unmapped
@@ -119,37 +121,37 @@ $cart->raw;                          // full payload for anything unmapped
 All of these return the updated `Cart`.
 
 ```php
-$picnic->addProductToCart('10511523', 2);                       // add 2 of one product
-$picnic->addMultipleProductsToCart(['10511523' => 2, '20622634' => 1]); // batch add (id => quantity)
-$picnic->removeProductFromCart('10511523');                       // remove 1
-$picnic->emptyShoppingCart();                                     // empty the cart
-$picnic->selectDeliverySlotForCart('slot-id');                      // pick a delivery slot
+$picnic->cart()->addProduct('10511523', 2);                       // add 2 of one product
+$picnic->cart()->addMultipleProducts(['10511523' => 2, '20622634' => 1]); // batch add (id => quantity)
+$picnic->cart()->removeProduct('10511523');                       // remove 1
+$picnic->cart()->empty();                                     // empty the cart
+$picnic->cart()->selectDeliverySlot('slot-id');                      // pick a delivery slot
 ```
 
 ### Deliveries & slots
 
 ```php
-$picnic->fetchAvailableDeliverySlots();                  // list<DeliverySlot>
-$picnic->fetchCurrentDeliveries();              // list<Delivery> — placed but not yet delivered
-$picnic->fetchAllDeliveries();                     // list<Delivery> — all (POSTs /deliveries/summary)
-$picnic->fetchDeliveryById('delivery-id');          // Delivery (now a GET)
-$picnic->fetchDeliveryRoutingScenario('delivery-id');  // array — live routing tree
-$picnic->fetchDeliveryDriverPosition('delivery-id');  // array — live driver position / ETA
+$picnic->deliveries()->fetchAvailableSlots();                  // list<DeliverySlot>
+$picnic->deliveries()->fetchCurrent();              // list<Delivery> — placed but not yet delivered
+$picnic->deliveries()->fetchAll();                     // list<Delivery> — all (POSTs /deliveries/summary)
+$picnic->deliveries()->fetchById('delivery-id');          // Delivery (now a GET)
+$picnic->deliveries()->fetchRoutingScenario('delivery-id');  // array — live routing tree
+$picnic->deliveries()->fetchDriverPosition('delivery-id');  // array — live driver position / ETA
 ```
 
 ### Lists
 
 ```php
-$picnic->fetchAllShoppingLists();                       // all lists
-$picnic->fetchShoppingListById('list-id');              // a single list
-$picnic->fetchShoppingListSublist('list-id', 'sub-id'); // a sublist
+$picnic->shoppingLists()->fetchAll();                       // all lists
+$picnic->shoppingLists()->fetchById('list-id');              // a single list
+$picnic->shoppingLists()->fetchSublist('list-id', 'sub-id'); // a sublist
 ```
 
 ### DTOs
 
 Structured responses (`User`, `Cart`, `CartItem`, `Delivery`, `DeliverySlot`, `Product`) are
 returned as typed, readonly DTOs. Field shapes drift between Picnic API versions, so hydration
-is lenient: known fields are typed (nullable), and the complete payload is always available on
+is lenient: ids are required (a missing one throws `MalformedResponseException`), other known fields are nullable, and the complete payload is always available on
 `->raw`. UI-tree endpoints (search-raw, delivery scenario/position, lists) return plain arrays.
 
 ### Error handling
@@ -174,13 +176,11 @@ try {
 Pass your own PSR-18 client and PSR-17 factories (handy for timeouts, proxies, logging, or tests):
 
 ```php
+use PhPicnic\HttpTransport;
+
 $picnic = Client::create(
-    username: '...',
-    password: '...',
-    countryCode: CountryCode::NL,
-    httpClient: $myPsr18Client,
-    requestFactory: $myPsr17Factory,
-    streamFactory: $myPsr17Factory,
+    new Credentials('...', '...'),
+    transport: new HttpTransport($myPsr18Client, $myPsr17Factory, $myPsr17Factory),
 );
 ```
 
@@ -188,9 +188,8 @@ $picnic = Client::create(
 
 ```shell
 composer install
-composer test   # PHPUnit
-composer stan   # PHPStan (level 8)
-composer cs     # php-cs-fixer (dry-run); composer cs-fix to apply
+composer check  # validate, lint, rector (dry-run), phpstan (max), phpunit
+composer fix    # apply Rector and php-cs-fixer
 ```
 
 ## Status

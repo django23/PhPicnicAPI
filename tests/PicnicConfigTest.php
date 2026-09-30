@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace PhPicnic\Tests;
 
+use PhPicnic\ApiLocation;
+use PhPicnic\ClientIdentity;
 use PhPicnic\Enum\CountryCode;
 use PhPicnic\PicnicConfig;
 use PHPUnit\Framework\TestCase;
@@ -12,45 +14,47 @@ final class PicnicConfigTest extends TestCase
 {
     public function testBuildsBaseUrlFromCountryAndVersion(): void
     {
-        $config = new PicnicConfig(CountryCode::NL, '15');
+        $location = new ApiLocation(CountryCode::NL, '15');
 
         self::assertSame(
             'https://storefront-prod.nl.picnicinternational.com/api/15',
-            $config->baseUrl(),
+            $location->baseUrl(),
         );
     }
 
     public function testBaseUrlReflectsCountryAndVersion(): void
     {
-        $config = new PicnicConfig('DE', '17');
+        $location = new ApiLocation('DE', '17');
 
         self::assertSame(
             'https://storefront-prod.de.picnicinternational.com/api/17',
-            $config->baseUrl(),
+            $location->baseUrl(),
         );
     }
 
     public function testBaseUrlOverrideWinsAndTrailingSlashTrimmed(): void
     {
-        $config = new PicnicConfig(CountryCode::NL, '15', baseUrl: 'https://proxy.local/api/15/');
+        $location = new ApiLocation(CountryCode::NL, '15', baseUrlOverride: 'https://proxy.local/api/15/');
 
-        self::assertSame('https://proxy.local/api/15', $config->baseUrl());
-    }
-
-    public function testWithAuthTokenReturnsCopyAndKeepsImmutable(): void
-    {
-        $config = new PicnicConfig(CountryCode::BE, '15');
-        $withToken = $config->withAuthToken('abc');
-
-        self::assertNull($config->authToken);
-        self::assertSame('abc', $withToken->authToken);
-        self::assertSame($config->baseUrl(), $withToken->baseUrl());
+        self::assertSame('https://proxy.local/api/15', $location->baseUrl());
     }
 
     public function testNormalizesStringCountryToEnum(): void
     {
-        $config = new PicnicConfig('nl');
+        $location = new ApiLocation('nl');
 
-        self::assertSame(CountryCode::NL, $config->countryCode);
+        self::assertSame(CountryCode::NL, $location->countryCode);
+    }
+
+    public function testDefaultHeadersCarryTheClientIdentity(): void
+    {
+        $config = new PicnicConfig(identity: new ClientIdentity(userAgent: 'custom/1.0', picnicDeviceId: 'device-1'));
+
+        $headers = $config->defaultHeaders();
+
+        self::assertSame('custom/1.0', $headers['User-Agent']);
+        self::assertSame('device-1', $headers['x-picnic-did']);
+        self::assertSame('30100;1.206.1-#15408', $headers['x-picnic-agent']);
+        self::assertArrayNotHasKey('x-picnic-auth', $headers);
     }
 }

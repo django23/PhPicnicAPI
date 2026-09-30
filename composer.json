@@ -69,7 +69,8 @@
         "fix": [
             "@refactor:fix",
             "@lint:fix"
-        ]
+        ],
+        "smoke": "@php scripts/live-smoke.php"
     },
     "config": {
         "sort-packages": true,
@@ -89,6 +90,7 @@
         "refactor:fix": "Apply Rector refactors",
         "validate:composer": "Validate composer.json strictly",
         "check": "Run every check: validate, lint, refactor, analyse, test (used by CI)",
-        "fix": "Apply all automatic fixes: Rector, then code style"
+        "fix": "Apply all automatic fixes: Rector, then code style",
+        "smoke": "Live read-only smoke test against the real Picnic API (needs .env, asks for the SMS code)"
     }
 }
