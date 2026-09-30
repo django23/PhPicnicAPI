@@ -33,7 +33,7 @@ use PhPicnic\Enum\CountryCode;
 use PhPicnic\PicnicConfig;
 
 $picnic = Client::create(
-    new Credentials('your@email.here', 'your-password'),
+    Credentials::fromPassword('your@email.here', 'your-password'),
     new PicnicConfig(new ApiLocation(CountryCode::NL, apiVersion: '15')), // optional
 );
 ```
@@ -52,8 +52,7 @@ Structured endpoints return readonly DTOs instead of raw arrays:
 | `getDeliveries()`, `getCurrentDeliveries()` | array | `list<Dto\Delivery>` |
 
 DTOs expose typed (nullable) fields plus a `->raw` array with the complete payload. UI-tree
-endpoints (`searchProductsRawResponse()`, `fetchDeliveryRoutingScenario()`, `fetchDeliveryDriverPosition()`, `fetchAllShoppingLists()` / `fetchShoppingListById()`,
-`fetchShoppingListSublist()`) still return arrays.
+endpoints (`searchProductsRawResponse()`, `fetchDeliveryRoutingScenario()`, `fetchDeliveryDriverPosition()`) still return arrays.
 
 ### Endpoint corrections (Picnic changed these)
 
@@ -66,7 +65,7 @@ endpoints (`searchProductsRawResponse()`, `fetchDeliveryRoutingScenario()`, `fet
 
 ### New methods
 
-`addMultipleProductsToCart()` (batch), `selectDeliverySlotForCart()`, `fetchShoppingListSublist()`, `fetchDeliveryRoutingScenario()`,
+`addMultipleProductsToCart()` (batch), `selectDeliverySlotForCart()`, `fetchDeliveryRoutingScenario()`,
 `fetchDeliveryDriverPosition()`, and the 2FA methods below.
 
 ### Exceptions
@@ -92,7 +91,7 @@ Login throws `TwoFactorRequiredException` for 2FA accounts; call `requestTwoFact
 
 ## Method and class renames (naming pass)
 
-Names now say what they do, and endpoints are grouped into resources: `$picnic->cart()`, `->products()`, `->deliveries()`, `->shoppingLists()`. `new Client(...)` became `Client::create(new Credentials(...), ...)` (it auto-discovers the PSR-18/17 dependencies).
+Names now say what they do, and endpoints are grouped into resources: `$picnic->cart()`, `->products()`, `->deliveries()`. `new Client(...)` became `Client::create(Credentials::fromPassword(...), ...)` (it auto-discovers the PSR-18/17 dependencies).
 
 | Old | New |
 |---|---|
@@ -101,12 +100,23 @@ Names now say what they do, and endpoints are grouped into resources: `$picnic->
 | `getCart` / `clearCart` | `cart()->fetch` / `cart()->empty` |
 | `addProduct` / `addProducts` / `removeProduct` | `cart()->addProduct` / `cart()->addMultipleProducts` / `cart()->removeProduct` |
 | `setDeliverySlot` / `getDeliverySlots` | `cart()->selectDeliverySlot` / `deliveries()->fetchAvailableSlots` |
-| `getList` / `getSublist` | `shoppingLists()->fetchAll` or `fetchById` / `fetchSublist` |
+| `getList` / `getSublist` | removed: Picnic dropped `/lists` (404 on API 15 and 17) |
 | `getDelivery` / `getDeliveries` / `getCurrentDeliveries` | `deliveries()->fetchById` / `fetchAll` / `fetchCurrent` |
 | `getDeliveryScenario` / `getDeliveryPosition` | `deliveries()->fetchRoutingScenario` / `fetchDriverPosition` |
 | `login` / `generate2FA` / `verify2FA` / `getAuthToken` | `authenticate` / `requestTwoFactorCode` / `verifyTwoFactorCode` / `currentAuthToken` |
 
 Other changes:
+
+- `Credentials::fromPassword()` replaces `new Credentials($user, $password)`; the constructor now takes the md5 secret. `fromHashedSecret()` skips the plain password.
+- `PicnicConfig` gained an `AuthTokenStoreInterface` (in memory by default, `FileAuthTokenStore` for persistence). `Credentials::$cachedAuthToken` still works.
+- The default app version changed from 1.206.1 to 1.246.1 (`AppProfile::V1_246_1`, live-verified on all read endpoints and the cart round trip). Use `ClientIdentity::forProfile(AppProfile::V1_206_1)` to keep the old one; then `profile-root`, `category-tree-root` and `promo-group-deep-dive` return JSON, so use `fetchPage()` for them.
+- `ClientIdentity::forProfile(AppProfile::...)` picks the app version; the device id must be 16 uppercase hex characters.
+- `ApiLocation` validates the API version (digits) and the base URL override (https, no credentials).
+- `Session` only accepts relative paths, reads error bodies on failed requests, and maps `CART_HAS_ISSUES` to `CheckoutIssueException` and an unverified 2FA to `TwoFactorRequiredException`.
+- `PicnicApiException` gained `requestMethod`, `isNetworkFailure()` and `mayHaveChangedState()`.
+- `UnexpectedResponseFormatException` is thrown when Picnic answers RSC where JSON was expected.
+- New resources: `checkout()`, `categories()`, `payments()`, `account()`, `consents()`, `customerService()`, `pages()`, `recipes()`; new `products()` and `deliveries()` methods (see the README table).
+- `Cart::$modificationTimestamp` (the `mts` a checkout start needs) was added.
 
 - `authToken:` constructor argument is now `Credentials::$cachedAuthToken`; custom PSR objects go in an `HttpTransport`.
 - `PicnicConfig` is split into `ApiLocation` (country, version, base URL override) and `ClientIdentity` (agent and device headers).

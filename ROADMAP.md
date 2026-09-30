@@ -137,3 +137,33 @@ differs between 15 and 17; add version-aware handling where needed and a compati
 - **Code coverage gate** in CI (e.g. fail under a threshold).
 - **`CHANGELOG.md`** following Keep a Changelog.
 - **Mutation testing** (Infection) for the core transport/auth logic.
+
+
+---
+
+## Status 2026-09-30: endpoint coverage and agent procedure
+
+Everything in the JS (`MRVDH/picnic-api` v4.10) and Python (`python-picnic-api2`) clients is now
+wrapped, except: GET `/lists` (removed by Picnic, 404 on API 15 and 17), `get_categories`
+(`/my_store`, removed), `recipe-details-page-root` (removed, replaced by selling groups), and
+the L3 category page id (none exists; L3 is a query on the L2 page).
+
+Live matrix (`composer smoke`, read-only) passes 36/36 on `AppProfile::V1_246_1` (the default since
+2026-09-30) and 34/36 on `V1_206_1` (the two RSC pages report "format" there, as designed). The
+`--write` round trip (add, remove, empty on an empty cart) passes on `V1_246_1`. Not yet verified
+live: checkout, payment, order confirm, delivery cancel and rating, recipes, consents, onboarding.
+
+### How to bump the app profile
+
+1. Get the newest Picnic Android APK, decompile (`jadx app.apk -d app-src --show-bad-code --deobf`),
+   read `versionName` and `versionCode` from `AndroidManifest.xml`.
+2. Confirm `pc:clid` (30100) in the JWT of a fresh login.
+3. Add the case to `Enum\AppProfile`, run `composer smoke -- --profile=<CASE>` and `--write`.
+4. Only flip the default in `ClientIdentity` once every endpoint passes, including the `--write` round trip.
+   Keep the APK out of git.
+
+### Open questions (unverified upstream too)
+
+- Whether the server checks that `x-picnic-did` equals the token's `pc:did`.
+- Token lifetime, rate limits, whether `Accept: application/json` changes the RSC pages.
+- The exact order of checkout confirm versus status polling.
