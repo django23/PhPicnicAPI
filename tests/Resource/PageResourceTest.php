@@ -166,4 +166,16 @@ final class PageResourceTest extends AbstractPicnicTestCase
         self::assertSame('', (string) $this->sentRequest(0)->getBody());
         $this->assertCarriesPicnicHeaders(0);
     }
+
+    public function testFetchRscPageParsesAnRscResponseForAnyPageId(): void
+    {
+        $this->queueText("0:[\"$\"]\n1:I[\"chunk\"]\n", 'text/x-component');
+
+        $page = $this->makeClient(cachedAuthToken: 'tok')->pages()->fetchRscPage('some-rsc-page', ['id' => '7']);
+
+        self::assertSame(self::BASE . '/pages/some-rsc-page?id=7', (string) $this->sentRequest(0)->getUri());
+        $this->assertCarriesPicnicHeaders(0);
+        self::assertSame(['0' => ['$']], $page->rows);
+        self::assertSame(['1' => ['chunk']], $page->modules);
+    }
 }
