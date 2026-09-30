@@ -4,14 +4,20 @@ declare(strict_types=1);
 
 namespace PhPicnic\Resource;
 
+use InvalidArgumentException;
+use PhPicnic\Action\CancelDelivery;
 use PhPicnic\Action\FetchAllDeliveries;
 use PhPicnic\Action\FetchAvailableDeliverySlots;
 use PhPicnic\Action\FetchCurrentDeliveries;
 use PhPicnic\Action\FetchDeliveryById;
 use PhPicnic\Action\FetchDeliveryDriverPosition;
 use PhPicnic\Action\FetchDeliveryRoutingScenario;
+use PhPicnic\Action\FetchPage;
+use PhPicnic\Action\RateDelivery;
+use PhPicnic\Action\ResendDeliveryInvoiceEmail;
 use PhPicnic\Dto\Delivery;
 use PhPicnic\Dto\DeliverySlot;
+use PhPicnic\Enum\PageId;
 use PhPicnic\LazyLoginApi;
 
 /**
@@ -31,6 +37,14 @@ final readonly class DeliveryResource
 
     private FetchDeliveryDriverPosition $fetchDeliveryDriverPosition;
 
+    private CancelDelivery $cancelDelivery;
+
+    private RateDelivery $rateDelivery;
+
+    private ResendDeliveryInvoiceEmail $resendDeliveryInvoiceEmail;
+
+    private FetchPage $fetchPage;
+
     public function __construct(LazyLoginApi $api)
     {
         $this->fetchAvailableDeliverySlots = new FetchAvailableDeliverySlots($api);
@@ -39,6 +53,10 @@ final readonly class DeliveryResource
         $this->fetchCurrentDeliveries = new FetchCurrentDeliveries($api);
         $this->fetchDeliveryRoutingScenario = new FetchDeliveryRoutingScenario($api);
         $this->fetchDeliveryDriverPosition = new FetchDeliveryDriverPosition($api);
+        $this->cancelDelivery = new CancelDelivery($api);
+        $this->rateDelivery = new RateDelivery($api);
+        $this->resendDeliveryInvoiceEmail = new ResendDeliveryInvoiceEmail($api);
+        $this->fetchPage = new FetchPage($api);
     }
 
     /**
@@ -84,5 +102,34 @@ final readonly class DeliveryResource
     public function fetchDriverPosition(string $deliveryId): array
     {
         return $this->fetchDeliveryDriverPosition->execute($deliveryId);
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    public function cancel(string $deliveryId): array
+    {
+        return $this->cancelDelivery->execute($deliveryId);
+    }
+
+    /**
+     * @throws InvalidArgumentException when the rating is outside 0 to 10
+     */
+    public function rate(string $deliveryId, int $rating): void
+    {
+        $this->rateDelivery->execute($deliveryId, $rating);
+    }
+
+    public function resendInvoiceEmail(string $deliveryId): void
+    {
+        $this->resendDeliveryInvoiceEmail->execute($deliveryId);
+    }
+
+    /**
+     * @return array<mixed>
+     */
+    public function fetchReceiptPage(string $deliveryId): array
+    {
+        return $this->fetchPage->execute(PageId::DELIVERY_RECEIPT, ['delivery_id' => $deliveryId]);
     }
 }

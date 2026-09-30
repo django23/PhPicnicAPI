@@ -17,11 +17,16 @@ final readonly class AddProductToCart
     {
     }
 
-    public function execute(string $productId, int $quantity = 1): Cart
+    /**
+     * @param list<array<string, mixed>> $sellingUnitContexts where the product is added from (meal plan, recipe, selling group)
+     */
+    public function execute(string $productId, int $quantity = 1, array $sellingUnitContexts = []): Cart
     {
-        return Cart::fromArray($this->api->post(ApiEndpoint::CART_ADD_PRODUCT->path(), [
-            'product_id' => $productId,
-            'count' => $quantity,
-        ]));
+        $payload = ['product_id' => $productId, 'count' => $quantity];
+        if ($sellingUnitContexts !== []) {
+            $payload['selling_unit_contexts'] = $sellingUnitContexts;
+        }
+
+        return Cart::fromArray($this->api->post(ApiEndpoint::CART_ADD_PRODUCT->path(), $payload));
     }
 }
