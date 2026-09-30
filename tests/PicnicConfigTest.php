@@ -48,13 +48,13 @@ final class PicnicConfigTest extends TestCase
 
     public function testDefaultHeadersCarryTheClientIdentity(): void
     {
-        $config = new PicnicConfig(identity: new ClientIdentity(userAgent: 'custom/1.0', picnicDeviceId: 'device-1'));
+        $config = new PicnicConfig(identity: new ClientIdentity(userAgent: 'custom/1.0', picnicDeviceId: 'ABCDEF0123456789'));
 
         $headers = $config->defaultHeaders();
 
         self::assertSame('custom/1.0', $headers['User-Agent']);
-        self::assertSame('device-1', $headers['x-picnic-did']);
-        self::assertSame('30100;1.206.1-#15408', $headers['x-picnic-agent']);
+        self::assertSame('ABCDEF0123456789', $headers['x-picnic-did']);
+        self::assertSame('30100;1.246.1-15599;', $headers['x-picnic-agent']);
         self::assertArrayNotHasKey('x-picnic-auth', $headers);
     }
 }

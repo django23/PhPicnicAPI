@@ -6,6 +6,7 @@ namespace PhPicnic;
 
 use JsonException;
 use PhPicnic\Exception\PicnicApiException;
+use PhPicnic\Exception\UnexpectedResponseFormatException;
 use Psr\Http\Message\ResponseInterface;
 
 /**
@@ -19,13 +20,24 @@ final class JsonResponseDecoder
      *
      * @return array<mixed>
      *
+     * @throws UnexpectedResponseFormatException when Picnic answered with a React Server Components page
      * @throws PicnicApiException when the body is not valid JSON
      */
-    public static function decode(ResponseInterface $response): array
+    public static function decode(ResponseInterface $response, string $path = ''): array
     {
         $body = (string) $response->getBody();
         if ($body === '') {
             return [];
+        }
+
+        $contentType = $response->getHeaderLine('Content-Type');
+        if (str_contains($contentType, 'text/x-component')) {
+            throw new UnexpectedResponseFormatException(
+                sprintf('"%s" answered with a React Server Components page instead of JSON. This page depends on the x-picnic-agent version: see Enum\\AppProfile.', $path),
+                $path,
+                $contentType,
+                $body,
+            );
         }
 
         try {

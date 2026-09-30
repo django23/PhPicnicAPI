@@ -41,7 +41,7 @@ final class SessionTest extends TestCase
 
     private function credentials(): Credentials
     {
-        return new Credentials('user@example.com', 'secret');
+        return Credentials::fromPassword('user@example.com', 'secret');
     }
 
     /**
@@ -63,7 +63,7 @@ final class SessionTest extends TestCase
         self::assertSame('tok-123', $session->authToken());
 
         $request = $this->http->getRequests()[0];
-        self::assertSame('30100;1.206.1-#15408', $request->getHeaderLine('x-picnic-agent'));
+        self::assertSame('30100;1.246.1-15599;', $request->getHeaderLine('x-picnic-agent'));
         $body = json_decode((string) $request->getBody(), true, 512, JSON_THROW_ON_ERROR);
         self::assertIsArray($body);
         self::assertSame(md5('secret'), $body['secret']);

@@ -58,10 +58,26 @@ abstract class AbstractPicnicTestCase extends TestCase
         ));
     }
 
+    protected function queueText(string $body, string $contentType = 'text/plain', int $status = 200): void
+    {
+        $this->http->addResponse(new Response($status, ['Content-Type' => $contentType], $body));
+    }
+
+    /**
+     * Every API request must carry the Picnic identity headers and the cached token.
+     */
+    protected function assertCarriesPicnicHeaders(int $index): void
+    {
+        $request = $this->sentRequest($index);
+        self::assertSame('30100;1.246.1-15599;', $request->getHeaderLine('x-picnic-agent'));
+        self::assertSame('598F770380CA54B6', $request->getHeaderLine('x-picnic-did'));
+        self::assertSame('tok', $request->getHeaderLine('x-picnic-auth'));
+    }
+
     protected function makeClient(?string $cachedAuthToken = null): Client
     {
         return Client::create(
-            new Credentials('user@example.com', 'secret', $cachedAuthToken),
+            Credentials::fromPassword('user@example.com', 'secret', $cachedAuthToken),
             transport: new HttpTransport($this->http, $this->psr17, $this->psr17),
         );
     }

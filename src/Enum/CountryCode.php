@@ -17,6 +17,18 @@ enum CountryCode: string
     case FR = 'FR';
 
     /**
+     * Language for the Accept-Language header.
+     */
+    public function languageCode(): string
+    {
+        return match ($this) {
+            self::NL, self::BE => 'nl',
+            self::DE => 'de',
+            self::FR => 'fr',
+        };
+    }
+
+    /**
      * Resolve a {@see CountryCode} from itself or a (case-insensitive) string.
      *
      * @throws UnsupportedCountryException when the country is not supported

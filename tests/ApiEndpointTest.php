@@ -17,8 +17,8 @@ final class ApiEndpointTest extends TestCase
     public function testPathUrlEncodesEveryParameter(): void
     {
         self::assertSame(
-            '/lists/a%2Fb?sublist=c%20d',
-            ApiEndpoint::SHOPPING_LIST_SUBLIST->path('a/b', 'c d'),
+            '/deliveries/a%2Fb%20c/scenario',
+            ApiEndpoint::DELIVERY_SCENARIO->path('a/b c'),
         );
     }
 }

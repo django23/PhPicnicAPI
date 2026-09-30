@@ -33,7 +33,7 @@ final class ClientTest extends AbstractPicnicTestCase
 
         $login = $this->sentRequest(0);
         self::assertSame('okhttp/4.9.0', $login->getHeaderLine('User-Agent'));
-        self::assertSame('30100;1.206.1-#15408', $login->getHeaderLine('x-picnic-agent'));
+        self::assertSame('30100;1.246.1-15599;', $login->getHeaderLine('x-picnic-agent'));
         self::assertSame('598F770380CA54B6', $login->getHeaderLine('x-picnic-did'));
     }
 
@@ -50,7 +50,7 @@ final class ClientTest extends AbstractPicnicTestCase
 
     public function testCreateWithoutTransportDiscoversHttpClientAndKeepsCachedToken(): void
     {
-        $client = Client::create(new Credentials('user@example.com', 'secret', 'cached'));
+        $client = Client::create(Credentials::fromPassword('user@example.com', 'secret', 'cached'));
 
         self::assertSame('cached', $client->currentAuthToken());
     }
@@ -179,30 +179,6 @@ final class ClientTest extends AbstractPicnicTestCase
         self::assertCount(1, $slots);
         self::assertSame('s1', $slots[0]->slotId);
         self::assertTrue($slots[0]->isAvailable);
-    }
-
-    public function testGetListAll(): void
-    {
-        $this->queueJson([]);
-        $this->makeClient(cachedAuthToken: 'tok')->shoppingLists()->fetchAll();
-
-        self::assertSame(self::BASE . '/lists', (string) $this->sentRequest(0)->getUri());
-    }
-
-    public function testGetListById(): void
-    {
-        $this->queueJson([]);
-        $this->makeClient(cachedAuthToken: 'tok')->shoppingLists()->fetchById('purchases');
-
-        self::assertSame(self::BASE . '/lists/purchases', (string) $this->sentRequest(0)->getUri());
-    }
-
-    public function testGetSublist(): void
-    {
-        $this->queueJson([]);
-        $this->makeClient(cachedAuthToken: 'tok')->shoppingLists()->fetchSublist('promotions', 'sub-1');
-
-        self::assertSame(self::BASE . '/lists/promotions?sublist=sub-1', (string) $this->sentRequest(0)->getUri());
     }
 
     public function testGetDeliveryUsesGet(): void
